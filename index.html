@@ -577,13 +577,12 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: scroll; /* scroll not auto - consistent with #app for iOS/Android zoom+scroll */
-      overflow-x: hidden;
-      overscroll-behavior-y: contain;
+      overflow-y: scroll;
+      overflow-x: auto; /* allow horizontal scroll when zoomed on mobile */
+      overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
       touch-action: pan-x pan-y pinch-zoom;
       box-sizing: border-box;
-      width: 100%;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -642,7 +641,7 @@
       background: white;
       border-radius: 8px;
       padding: 16px;
-      padding-bottom: 80px; /* prevent content being flush at bottom when zoomed on mobile */
+      padding-bottom: 120px; /* prevent content being flush at bottom when zoomed on mobile */
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
@@ -701,9 +700,14 @@
     #printPreviewBody .expense-table td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 13px; }
     #printPreviewBody .expense-table td:last-child { text-align: right; font-weight: 700; }
     #printPreviewBody .flock-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
-    #printPreviewBody .flock-table th { background: #f0f0f0; padding: 7px 8px; text-align: left; border: 1px solid #ddd; font-size: 11px; }
-    #printPreviewBody .flock-table td { padding: 6px 8px; border: 1px solid #eee; }
+    #printPreviewBody .flock-table th { background: #f0f0f0; padding: 7px 8px; text-align: left; border: 1px solid #ddd; font-size: 11px; white-space: nowrap; }
+    #printPreviewBody .flock-table td { padding: 6px 8px; border: 1px solid #eee; white-space: nowrap; }
     #printPreviewBody .flock-table tr:nth-child(even) td { background: #fafafa; }
+    #printPreviewBody .flock-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    @media (max-width: 768px) {
+      #printPreviewBody .flock-table { font-size: 10px; }
+      #printPreviewBody .flock-table th, #printPreviewBody .flock-table td { padding: 5px 6px; }
+    }
     #printPreviewBody .highlight-row { background: #f0fdf4; border: 1px solid #22c55e; border-radius: 6px; padding: 10px 14px; margin: 8px 0; }
     #printPreviewBody .highlight-row .hlabel { font-size: 10px; color: #666; text-transform: uppercase; }
     #printPreviewBody .highlight-row .hvalue { font-size: 16px; font-weight: 700; color: #16a34a; }
@@ -10869,6 +10873,7 @@ Current data will be REPLACED. Are you sure?`,
 
           ${flockRows ? `
             <h2>🐔 Individual Flock Results</h2>
+            <div class="flock-table-scroll">
             <table class="flock-table">
               <thead><tr>
                 <th>Flock #</th><th>Barn</th>
@@ -10878,6 +10883,7 @@ Current data will be REPLACED. Are you sure?`,
               </tr></thead>
               <tbody>${flockRows}</tbody>
             </table>
+            </div>
           ` : ''}
 
           <div class="footer">FlockPro v${app.appVersion} • ${farmName} • ${now}</div>
