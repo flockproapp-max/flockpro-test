@@ -343,7 +343,6 @@
       height: 100%;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      will-change: background-color;
       position: fixed;
       top: 0;
       left: 0;
@@ -4136,45 +4135,33 @@
           }
         }, { passive: false });
 
-        // Fix zoom-scroll getting stuck on iOS Safari AND Android Chrome.
-        //
-        // The problem: body is position:fixed so #app is the scroll container.
-        // When the user pinch-zooms, both browsers zoom the visual viewport
-        // but keep #app's scroll boundaries based on the original layout size.
-        // Android Chrome: can get stuck because the scrollable area doesn't
-        //   update to reflect the zoomed content height.
-        // iOS Safari: visual viewport scrolls independently of the DOM, so
-        //   panning while zoomed can appear to do nothing or snap back.
-        //
-        // Fix: use the visualViewport API (supported on both Android Chrome 61+
-        // and iOS Safari 13+) to reposition #app so it always aligns with
-        // what the user can actually see, making scroll feel natural at any zoom.
+        // Fix: when zoomed on Android or iOS, the visual viewport pans
+        // independently of the DOM. This makes #app (the scroll container)
+        // stay anchored to the top-left of the layout viewport instead of
+        // following the user's zoomed view — so scrolling feels broken or stuck.
+        // The fix: reposition #app to always match the visual viewport's
+        // current offset and size while zoomed, then restore when zoom ends.
         if (window.visualViewport) {
-          const app = document.getElementById('app');
-
-          const handleViewport = () => {
+          const syncAppToViewport = () => {
+            const app = document.getElementById('app');
             if (!app) return;
             const vv = window.visualViewport;
             if (vv.scale > 1.01) {
-              // Zoomed in: pin #app's top-left to the visual viewport offset
-              // so scrolling inside #app matches what the user sees
               app.style.position = 'fixed';
-              app.style.top = vv.offsetTop + 'px';
-              app.style.left = vv.offsetLeft + 'px';
-              app.style.width = vv.width + 'px';
-              app.style.height = vv.height + 'px';
+              app.style.top    = vv.offsetTop  + 'px';
+              app.style.left   = vv.offsetLeft + 'px';
+              app.style.width  = vv.width      + 'px';
+              app.style.height = vv.height     + 'px';
             } else {
-              // Back to normal zoom - restore #app to fill the full screen
               app.style.position = 'absolute';
-              app.style.top = '0';
-              app.style.left = '0';
-              app.style.width = '';
+              app.style.top    = '0';
+              app.style.left   = '0';
+              app.style.width  = '';
               app.style.height = '';
             }
           };
-
-          window.visualViewport.addEventListener('scroll', handleViewport);
-          window.visualViewport.addEventListener('resize', handleViewport);
+          window.visualViewport.addEventListener('scroll', syncAppToViewport);
+          window.visualViewport.addEventListener('resize', syncAppToViewport);
         }
       }
 
@@ -8045,7 +8032,7 @@
         const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : 'N/A';
 
         return `
-          <div style="background:#f0f0f0;min-height:100vh;padding:12px;">
+          <div style="background:#f0f0f0;min-height:100vh;padding:12px;padding-bottom:160px;">
             <!-- Toolbar -->
             <div style="background:#1a1a1a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
               <span style="color:#22c55e;font-weight:700;font-size:0.95em;">🖨️ Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</span>
