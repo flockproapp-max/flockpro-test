@@ -597,25 +597,33 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 24px;
-      gap: 12px;
+      padding: 10px 12px;
+      gap: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+      width: 100%;
     }
     #printPreviewToolbar .toolbar-title {
       color: #22c55e;
       font-weight: 700;
-      font-size: 1em;
-      letter-spacing: 0.05em;
+      font-size: 0.85em;
+      letter-spacing: 0.03em;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     #printPreviewToolbar .toolbar-actions {
       display: flex;
-      gap: 10px;
+      gap: 6px;
+      flex-shrink: 0;
     }
     #printPreviewToolbar button {
       border: none;
       border-radius: 8px;
-      padding: 10px 22px;
-      font-size: 0.95em;
+      padding: 8px 14px;
+      font-size: 0.85em;
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.2s;
@@ -631,16 +639,17 @@
     }
     #printPreviewBody {
       max-width: 900px;
-      margin: 20px auto;
+      margin: 8px auto;
       background: white;
       border-radius: 8px;
-      padding: 24px;
+      padding: 16px;
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
       line-height: 1.5;
       box-sizing: border-box;
       width: calc(100% - 16px);
+      max-width: 100%;
     }
     #printPreviewBody h1 { font-size: 22px; margin: 0 0 4px 0; color: #111; }
     #printPreviewBody h2 { font-size: 16px; margin: 20px 0 8px 0; border-bottom: 2px solid #22c55e; padding-bottom: 4px; color: #111; }
@@ -4439,7 +4448,7 @@
           feedLabel: "Total Feed Cost", poultLabel: "Poult Cost",
           depLabel: "Depreciation", fuelLabel: "Fuel",
           medsLabel: "Meds & Vaccines", cleanLabel: "Cleaner & Disinfect",
-          pestLabel: "Pest Control", waterLabel: "Water Additives",
+          pestLabel: "Pest Control", waterLabel: "Water & Additives",
           equipLabel: "Equipment", repairsLabel: "Repairs",
           electricLabel: "Electric", gasLabel: "Natural Gas/Propane",
           coalLabel: "Coal", loadingLabel: "Turkey Loading",
@@ -7619,12 +7628,14 @@
 
       updateDailyStats() {
         const input = document.getElementById('daily-deaths-input');
+        const cullsInput = document.getElementById('daily-culls-input');
         const typedDeaths = parseInt(input ? input.value : 0) || 0;
+        const typedCulls = parseInt(cullsInput ? cullsInput.value : 0) || 0;
         const logs = this.dailyLogs || [];
         const started = this.currentFlock ? (this.currentFlock.placed || 0) : 0;
 
-        const otherDaysTotal = logs.reduce((sum, l) => sum + (l.deaths || 0), 0);
-        const totalDead = otherDaysTotal + typedDeaths;
+        const otherDaysTotal = logs.reduce((sum, l) => sum + (l.deaths || 0) + (l.culls || 0), 0);
+        const totalDead = otherDaysTotal + typedDeaths + typedCulls;
 
         const birdsLeft = Math.max(0, started - totalDead);
         const livability = started > 0 ? ((birdsLeft / started) * 100).toFixed(1) : '0.0';
@@ -7652,7 +7663,7 @@
 
         // Calculate bird stats based on user preference
         const useDaily = this.currentFlock.birdsLeftSource === 'daily';
-        const totalDead = logs.reduce((sum, l) => sum + (l.deaths || 0), 0);
+        const totalDead = logs.reduce((sum, l) => sum + (l.deaths || 0) + (l.culls || 0), 0);
         const started = this.currentFlock.placed || 0;
         const birdsLeft = useDaily ? (started - totalDead) : (this.currentFlock.shipped || 0);
         const livability = started > 0 ? ((birdsLeft / started) * 100).toFixed(1) : '0.0';
@@ -7663,9 +7674,11 @@
               <div style="flex:1; min-width:0;">
                 <div style="font-weight:700; color:#fff; margin-bottom:6px;">📅 ${log.date || '—'}</div>
                 <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.9em;">
-                  ${log.deaths > 0 ? `<span style="color:#ef4444; font-weight:700;">💀 ${log.deaths} dead</span>` : ''}
+                  ${log.deaths > 0 ? `<span style="color:#ef4444; font-weight:700;">${log.deaths} dead</span>` : ''}
+                  ${log.culls > 0 ? `<span style="color:#f97316; font-weight:700;">${log.culls} culls</span>` : ''}
                   ${log.waterGallons > 0 ? `<span style="color:#60a5fa;">💧 ${log.waterGallons} gal</span>` : ''}
-                  ${log.waterProducts ? `<span style="color:#aaa; word-break:break-word;">🧪 ${this.escapeHtml(log.waterProducts)}</span>` : ''}
+                  ${log.waterProducts ? `<span style="color:#aaa; word-break:break-word;">🧪 ${this.escapeHtml(log.waterProducts)}${log.waterProductsCost > 0 ? ` <span style="color:#22c55e;">$${log.waterProductsCost.toFixed(2)}</span>` : ''}</span>` : ''}
+                  ${log.medsUsed ? `<span style="color:#c084fc; word-break:break-word;">💊 ${this.escapeHtml(log.medsUsed)}${log.medsCost > 0 ? ` <span style="color:#22c55e;">$${log.medsCost.toFixed(2)}</span>` : ''}</span>` : ''}
                 </div>
               </div>
               <div style="display:flex; gap:4px; flex-shrink:0;">
@@ -7680,14 +7693,22 @@
           <div class="arduino-card" style="background:#111 !important; border-color:#2a2a2a !important; color:#fff !important;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h3 style="margin:0; color:#fff !important;">📅 Daily Log — Flock #${this.escapeHtml(String(this.currentFlock.id))}</h3>
-              <button onclick="app.currentView='mortality'; app.render();" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
+              <button onclick="app.loadDailyLogs().then(()=>{ app.currentView='mortality'; app.render(); })" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
             </div>
 
             <!-- Bird Stats Bar -->
+            ${started === 0 ? `
+            <div style="background:#7f1d1d; border:1px solid #ef4444; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fca5a5; font-size:0.85em;">
+              ⚠️ <b>Birds Placed is not set.</b> Go to <b>Flock Data</b> tab and enter the number of birds placed so totals calculate correctly.
+            </div>` : ''}
+            ${this.currentFlock.birdsLeftSource !== 'daily' ? `
+            <div style="background:#713f12; border:1px solid #f59e0b; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fde68a; font-size:0.85em;">
+              ⚠️ <b>Daily Log is not controlling Birds Left.</b> Go to <b>Flock Data</b> tab and turn on <b>Daily Log controls this</b> so deaths are tracked automatically.
+            </div>` : ''}
             <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px;">
-              <div style="background:#1a1a1a; border-radius:10px; padding:12px; text-align:center; border:1px solid #2a2a2a;">
+              <div style="background:#1a1a1a; border-radius:10px; padding:12px; text-align:center; border:1px solid ${started===0?'#ef4444':'#2a2a2a'};">
                 <div style="font-size:0.7em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Started</div>
-                <div style="font-size:clamp(1em,4.5vw,1.4em); font-weight:700; color:#fff;">${started.toLocaleString()}</div>
+                <div style="font-size:clamp(1em,4.5vw,1.4em); font-weight:700; color:${started===0?'#ef4444':'#fff'};">${started === 0 ? '⚠️ Not Set' : started.toLocaleString()}</div>
               </div>
               <div style="background:#1a1a1a; border-radius:10px; padding:12px; text-align:center; border:1px solid #2a2a2a;">
                 <div style="font-size:0.7em; color:#888; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px;">Birds Left</div>
@@ -7710,10 +7731,21 @@
               </div>
 
               <div class="daily-log-field">
-                <label>💀 Deaths Today</label>
-                <input type="number" name="deaths" id="daily-deaths-input" min="0" max="99999" step="1" placeholder="0" inputmode="numeric"
-                  oninput="app.updateDailyStats()"
-                  style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:1.1em;">
+                <label>Deaths / Culls</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Deaths</div>
+                    <input type="number" name="deaths" id="daily-deaths-input" min="0" max="99999" step="1" placeholder="0" inputmode="numeric"
+                      oninput="app.updateDailyStats()"
+                      style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:1.1em; box-sizing:border-box;">
+                  </div>
+                  <div>
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Culls</div>
+                    <input type="number" name="culls" id="daily-culls-input" min="0" max="99999" step="1" placeholder="0" inputmode="numeric"
+                      oninput="app.updateDailyStats()"
+                      style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:1.1em; box-sizing:border-box;">
+                  </div>
+                </div>
               </div>
 
               <div class="daily-log-field">
@@ -7723,9 +7755,25 @@
               </div>
 
               <div class="daily-log-field">
-                <label>🧪 Water Products Used</label>
-                <input type="text" name="waterProducts" maxlength="300" placeholder="e.g. 3 gals of Cid 2000"
-                  style="width:100%; padding:12px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:1em;">
+                <label>🧪 Water Products &amp; Meds</label>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                  <div>
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Water Products Used</div>
+                    <input type="text" name="waterProducts" maxlength="300" placeholder="e.g. 3 gals of Cid 2000"
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px;">
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Cost ($)</div>
+                    <input type="number" name="waterProductsCost" min="0" step="0.01" placeholder="0.00" inputmode="decimal"
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box;">
+                  </div>
+                  <div>
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Meds Used</div>
+                    <input type="text" name="medsUsed" maxlength="300" placeholder="e.g. Tylosin 200mg"
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px;">
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Cost ($)</div>
+                    <input type="number" name="medsCost" min="0" step="0.01" placeholder="0.00" inputmode="decimal"
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box;">
+                  </div>
+                </div>
               </div>
 
               <button type="submit" class="btn btn-primary" style="padding:16px; font-size:1.1em; font-weight:700; width:100%;">
@@ -7748,8 +7796,8 @@
       renderMortalityTab() {
         const logs = this.dailyLogs || [];
         const flock = this.currentFlock;
-        const placed = flock.placed || 0;
-        const placedDate = flock.placedDate || flock.startDate || null;
+        const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,"")) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,"")) || parseFloat(String(flock.numBirds||0).replace(/[,$]/g,"")) || 0;
+        const placedDate = flock.placedDate || flock.startDate || flock.startedDate || null;
         const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
         const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const WEEKS = 22;
@@ -7759,7 +7807,7 @@
           if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0);
         });
 
-        const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
+        const fmtD = d => String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
         const toYMD = d => d.toISOString().split('T')[0];
 
         let weekCards = '';
@@ -7812,7 +7860,7 @@
               <div style="background:${weekDeaths > 0 ? '#166534' : '#111'}; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
                 <span style="color:#22c55e; font-weight:700; font-size:14px;">Week ${w}</span>
                 <span style="color:#888; font-size:11px;">${weekRange}</span>
-                ${weekDeaths > 0 ? `<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;">💀 ${weekDeaths}</span>` : '<span style="color:#555; font-size:12px;">No deaths</span>'}
+                ${weekDeaths > 0 ? `<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;">${weekDeaths}</span>` : '<span style="color:#555; font-size:12px;">No deaths</span>'}
               </div>
               <div style="display:flex; border-bottom:1px solid #2a2a2a;">${dayCellsHtml}</div>
               <div style="display:grid; grid-template-columns:repeat(3,1fr); padding:8px 12px; gap:8px;">
@@ -7834,8 +7882,8 @@
         }
 
         const totalDead = logs.reduce((s, l) => s + (l.deaths || 0), 0);
-        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : '0.00';
-        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : '100.00';
+        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : 'N/A';
+        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : 'N/A';
 
         return `
           <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px;">
@@ -7864,18 +7912,24 @@
         const logs = this.dailyLogs || [];
         const flock = this.currentFlock;
         if (!flock) return '';
-        const placed = flock.placed || 0;
-        const placedDate = flock.placedDate || flock.startDate || null;
+        const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,"")) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,"")) || parseFloat(String(flock.numBirds||0).replace(/[,$]/g,"")) || 0;
+        const placedDate = flock.placedDate || flock.startDate || flock.startedDate || null;
         const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
         const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const WEEKS = 22;
         const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
         const farmName = (this.settings && this.settings.farmName) ? this.settings.farmName : 'Farm';
 
+        // Warn if no start date
+        const noDateWarning = !base ? `
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px;margin-bottom:16px;color:#92400e;font-size:13px;">
+            ⚠️ No start date set on this flock. Go to <b>Flock Data</b> and set the <b>Started Date</b> to show real dates and match daily log entries.
+          </div>` : '';
+
         const deathsByDate = {};
         logs.forEach(l => { if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0); });
 
-        const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
+        const fmtD = d => String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
         const toYMD = d => d.toISOString().split('T')[0];
 
         let weekCards = '';
@@ -7912,41 +7966,41 @@
           const dayCellsHtml = DAY_NAMES.map((name, i) => {
             const c = dayCells[i];
             const color = c.dayDeaths > 0 ? '#dc2626' : '#999';
-            return `<div style="text-align:center;flex:1;min-width:0;padding:10px 2px;border-right:1px solid #e5e5e5;">
-              <div style="font-size:14px;color:#444;font-weight:700;margin-bottom:3px;">${name}</div>
-              <div style="font-size:13px;color:#aaa;margin-bottom:5px;">${c.dayLabel}</div>
-              <div style="font-size:20px;color:${color};font-weight:${c.dayDeaths>0?'700':'400'};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            return `<div style="text-align:center;flex:1;min-width:0;padding:8px 2px;border-right:1px solid #e5e5e5;">
+              <div style="font-size:11px;color:#555;font-weight:700;margin-bottom:2px;">${name}</div>
+              <div style="font-size:11px;color:#22c55e;font-weight:700;margin-bottom:4px;">${c.dayLabel}</div>
+              <div style="font-size:16px;color:${color};font-weight:${c.dayDeaths>0?'700':'400'};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
             </div>`;
           }).join('');
 
           weekCards += `
             <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="background:${weekDeaths>0?'#166534':'#22c55e'};padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
-                <span style="color:#fff;font-weight:700;font-size:20px;">Week ${w}</span>
-                <span style="color:rgba(255,255,255,0.9);font-size:15px;">${weekRange}</span>
-                ${weekDeaths > 0 ? `<span style="background:#dc2626;color:#fff;padding:4px 12px;border-radius:10px;font-size:16px;font-weight:700;">💀 ${weekDeaths}</span>` : '<span style="color:rgba(255,255,255,0.8);font-size:15px;">No deaths</span>'}
+              <div style="background:${weekDeaths>0?'#166534':'#22c55e'};padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span style="color:#fff;font-weight:700;font-size:18px;">Week ${w}</span>
+                <span style="color:#fff;font-weight:700;font-size:16px;">${weekRange}</span>
+                ${weekDeaths > 0 ? `<span style="background:#dc2626;color:#fff;padding:4px 12px;border-radius:10px;font-size:15px;font-weight:700;">${weekDeaths} dead</span>` : '<span style="color:rgba(255,255,255,0.9);font-size:14px;">No deaths</span>'}
               </div>
               <div style="display:flex;border-bottom:1px solid #e5e5e5;">${dayCellsHtml}</div>
               <div style="display:grid;grid-template-columns:repeat(3,1fr);padding:12px 16px;gap:8px;background:#fafafa;">
                 <div style="text-align:center;">
-                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Wk Mort%</div>
-                  <div style="font-size:22px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#bbb'};margin-top:4px;">${weekMortPct}</div>
+                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Wk Mort%</div>
+                  <div style="font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#bbb'};margin-top:4px;">${weekMortPct}</div>
                 </div>
                 <div style="text-align:center;">
-                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Total Dead</div>
-                  <div style="font-size:22px;font-weight:700;color:${runningTotal>0?'#dc2626':'#bbb'};margin-top:4px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Total Dead</div>
+                  <div style="font-size:18px;font-weight:700;color:${runningTotal>0?'#dc2626':'#bbb'};margin-top:4px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
                 </div>
                 <div style="text-align:center;">
-                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Livability</div>
-                  <div style="font-size:22px;font-weight:700;color:#16a34a;margin-top:4px;">${livability}</div>
+                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Livability</div>
+                  <div style="font-size:18px;font-weight:700;color:#16a34a;margin-top:4px;">${livability}</div>
                 </div>
               </div>
             </div>`;
         }
 
         const totalDead = logs.reduce((s, l) => s + (l.deaths || 0), 0);
-        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : '0.00';
-        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : '100.00';
+        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : 'N/A';
+        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : 'N/A';
 
         return `
           <div style="background:#f0f0f0;min-height:100vh;padding:12px;">
@@ -7954,7 +8008,7 @@
             <div style="background:#1a1a1a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
               <span style="color:#22c55e;font-weight:700;font-size:0.95em;">🖨️ Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</span>
               <div style="display:flex;gap:8px;">
-                <button onclick="window.print()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
+                <button onclick="showMortalitySheet()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
                 <button onclick="app.currentView='flock'; app.flockTab='daily'; app.render();" style="background:#444;color:#fff;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">✕ Close</button>
               </div>
             </div>
@@ -7967,10 +8021,12 @@
                 <div style="font-size:11px;color:#888;margin-top:4px;">Generated: ${now}</div>
               </div>
 
+              ${noDateWarning}
+
               <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
                 <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
                   <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Birds Placed</div>
-                  <div style="font-size:34px;font-weight:700;color:#111;margin-top:6px;">${placed.toLocaleString()}</div>
+                  <div style="font-size:34px;font-weight:700;color:${placed>0?'#111':'#dc2626'};margin-top:6px;">${placed > 0 ? placed.toLocaleString() : '⚠️ Not Set'}</div>
                 </div>
                 <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fef2f2;">
                   <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Total Dead</div>
@@ -7978,11 +8034,11 @@
                 </div>
                 <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fffbeb;">
                   <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Mortality %</div>
-                  <div style="font-size:34px;font-weight:700;color:#d97706;margin-top:6px;">${totalMortPct}%</div>
+                  <div style="font-size:34px;font-weight:700;color:#d97706;margin-top:6px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
                 </div>
                 <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
                   <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Livability</div>
-                  <div style="font-size:34px;font-weight:700;color:#16a34a;margin-top:6px;">${finalLivability}%</div>
+                  <div style="font-size:34px;font-weight:700;color:#16a34a;margin-top:6px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
                 </div>
               </div>
 
@@ -8022,8 +8078,12 @@
         const entry = {
           date: data.get('date') || new Date().toISOString().split('T')[0],
           deaths: parseInt(data.get('deaths')) || 0,
+          culls: parseInt(data.get('culls')) || 0,
           waterGallons: parseFloat(data.get('waterGallons')) || 0,
           waterProducts: this.sanitizeInput((data.get('waterProducts') || '').slice(0, 300)),
+          waterProductsCost: parseFloat(data.get('waterProductsCost')) || 0,
+          medsUsed: this.sanitizeInput((data.get('medsUsed') || '').slice(0, 300)),
+          medsCost: parseFloat(data.get('medsCost')) || 0,
           savedAt: new Date().toISOString()
         };
 
@@ -8036,10 +8096,16 @@
             const updated = {
               date: entry.date,
               deaths: (existing.deaths || 0) + entry.deaths,
+              culls: (existing.culls || 0) + entry.culls,
               waterGallons: Math.round(((existing.waterGallons || 0) + entry.waterGallons) * 10) / 10,
               waterProducts: existing.waterProducts && entry.waterProducts
                 ? existing.waterProducts + ' | ' + entry.waterProducts
                 : existing.waterProducts || entry.waterProducts,
+              waterProductsCost: Math.round(((existing.waterProductsCost || 0) + entry.waterProductsCost) * 100) / 100,
+              medsUsed: existing.medsUsed && entry.medsUsed
+                ? existing.medsUsed + ' | ' + entry.medsUsed
+                : existing.medsUsed || entry.medsUsed,
+              medsCost: Math.round(((existing.medsCost || 0) + entry.medsCost) * 100) / 100,
               savedAt: existing.savedAt,
               updatedAt: new Date().toISOString()
             };
@@ -8060,12 +8126,21 @@
           }
 
           // Update shipped count on the flock to reflect birds left
-          const totalDead = this.dailyLogs.reduce((sum, l) => sum + (l.deaths || 0), 0);
+          const totalDead = this.dailyLogs.reduce((sum, l) => sum + (l.deaths || 0) + (l.culls || 0), 0);
           const birdsLeft = Math.max(0, (this.currentFlock.placed || 0) - totalDead);
+
+          // Tally all costs from daily logs and add to flock expense fields
+          const totalWaterCost = this.dailyLogs.reduce((sum, l) => sum + (l.waterProductsCost || 0), 0);
+          const totalMedsCost = this.dailyLogs.reduce((sum, l) => sum + (l.medsCost || 0), 0);
+          const newWater = Math.round(totalWaterCost * 100) / 100;
+          const newMeds = Math.round(totalMedsCost * 100) / 100;
+
           await db.collection('users').doc(this.user.uid)
             .collection('flocks').doc(this.currentFlock.docId)
-            .update({ shipped: birdsLeft });
+            .update({ shipped: birdsLeft, water: newWater, meds: newMeds });
           this.currentFlock.shipped = birdsLeft;
+          this.currentFlock.water = newWater;
+          this.currentFlock.meds = newMeds;
           form.reset();
           form.querySelector('[name="date"]').value = new Date().toISOString().split('T')[0];
           this.render();
@@ -8082,6 +8157,19 @@
             .collection('flocks').doc(this.currentFlock.docId)
             .collection('dailyLogs').doc(logId).delete();
           this.dailyLogs = this.dailyLogs.filter(l => l.id !== logId);
+
+          // Recalculate flock costs from remaining logs
+          const totalDead = this.dailyLogs.reduce((sum, l) => sum + (l.deaths || 0) + (l.culls || 0), 0);
+          const birdsLeft = Math.max(0, (this.currentFlock.placed || 0) - totalDead);
+          const newWater = Math.round(this.dailyLogs.reduce((sum, l) => sum + (l.waterProductsCost || 0), 0) * 100) / 100;
+          const newMeds = Math.round(this.dailyLogs.reduce((sum, l) => sum + (l.medsCost || 0), 0) * 100) / 100;
+          await db.collection('users').doc(this.user.uid)
+            .collection('flocks').doc(this.currentFlock.docId)
+            .update({ shipped: birdsLeft, water: newWater, meds: newMeds });
+          this.currentFlock.shipped = birdsLeft;
+          this.currentFlock.water = newWater;
+          this.currentFlock.meds = newMeds;
+
           this.showToast('Entry deleted');
           this.render();
         } catch (e) {
@@ -8102,17 +8190,33 @@
                 <input type="date" id="edit-date-${logId}" value="${log.date || ''}" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
               </div>
               <div>
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Water (gallons)</div>
+                <input type="number" id="edit-water-${logId}" value="${log.waterGallons || 0}" min="0" step="0.1" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
+              </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div>
                 <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Deaths</div>
                 <input type="number" id="edit-deaths-${logId}" value="${log.deaths || 0}" min="0" step="1" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
               </div>
+              <div>
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Culls</div>
+                <input type="number" id="edit-culls-${logId}" value="${log.culls || 0}" min="0" step="1" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
+              </div>
             </div>
-            <div>
-              <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Water (gallons)</div>
-              <input type="number" id="edit-water-${logId}" value="${log.waterGallons || 0}" min="0" step="0.1" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
-            </div>
-            <div>
-              <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Water Products</div>
-              <input type="text" id="edit-products-${logId}" value="${this.escapeHtml(log.waterProducts || '')}" maxlength="300" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+              <div>
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Water Products</div>
+                <input type="text" id="edit-products-${logId}" value="${this.escapeHtml(log.waterProducts || '')}" maxlength="300" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box; margin-bottom:6px;">
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Water Products Cost ($)</div>
+                <input type="number" id="edit-waterCost-${logId}" value="${log.waterProductsCost || 0}" min="0" step="0.01" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
+              </div>
+              <div>
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Meds Used</div>
+                <input type="text" id="edit-meds-${logId}" value="${this.escapeHtml(log.medsUsed || '')}" maxlength="300" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box; margin-bottom:6px;">
+                <div style="font-size:0.75em; color:#888; margin-bottom:4px;">Meds Cost ($)</div>
+                <input type="number" id="edit-medsCost-${logId}" value="${log.medsCost || 0}" min="0" step="0.01" style="background:#1a1a1a; border:1px solid #22c55e; border-radius:6px; color:#fff; padding:8px; width:100%; box-sizing:border-box;">
+              </div>
             </div>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-primary" onclick="app.updateDailyLog('${logId}')" style="flex:1; padding:10px; font-weight:700;">✅ Save</button>
@@ -8128,8 +8232,12 @@
         const updated = {
           date: document.getElementById(`edit-date-${logId}`).value || log.date,
           deaths: parseInt(document.getElementById(`edit-deaths-${logId}`).value) || 0,
+          culls: parseInt(document.getElementById(`edit-culls-${logId}`).value) || 0,
           waterGallons: parseFloat(document.getElementById(`edit-water-${logId}`).value) || 0,
           waterProducts: this.sanitizeInput(document.getElementById(`edit-products-${logId}`).value.slice(0, 300)),
+          waterProductsCost: parseFloat(document.getElementById(`edit-waterCost-${logId}`).value) || 0,
+          medsUsed: this.sanitizeInput(document.getElementById(`edit-meds-${logId}`).value.slice(0, 300)),
+          medsCost: parseFloat(document.getElementById(`edit-medsCost-${logId}`).value) || 0,
           savedAt: log.savedAt,
           updatedAt: new Date().toISOString()
         };
@@ -8139,6 +8247,19 @@
             .collection('dailyLogs').doc(logId).update(updated);
           const idx = this.dailyLogs.findIndex(l => l.id === logId);
           this.dailyLogs[idx] = { id: logId, ...updated };
+
+          // Recalculate flock costs from all logs
+          const totalDead = this.dailyLogs.reduce((sum, l) => sum + (l.deaths || 0) + (l.culls || 0), 0);
+          const birdsLeft = Math.max(0, (this.currentFlock.placed || 0) - totalDead);
+          const newWater = Math.round(this.dailyLogs.reduce((sum, l) => sum + (l.waterProductsCost || 0), 0) * 100) / 100;
+          const newMeds = Math.round(this.dailyLogs.reduce((sum, l) => sum + (l.medsCost || 0), 0) * 100) / 100;
+          await db.collection('users').doc(this.user.uid)
+            .collection('flocks').doc(this.currentFlock.docId)
+            .update({ shipped: birdsLeft, water: newWater, meds: newMeds });
+          this.currentFlock.shipped = birdsLeft;
+          this.currentFlock.water = newWater;
+          this.currentFlock.meds = newMeds;
+
           this.showToast('✓ Entry updated!');
           this.render();
         } catch (e) {
@@ -10518,6 +10639,17 @@ Current data will be REPLACED. Are you sure?`,
     function showPrintPreview() {
       const overlay = document.getElementById('printPreviewOverlay');
       const body = document.getElementById('printPreviewBody');
+
+      // Show loading state immediately
+      body.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Loading report...</p>';
+      openPreviewOverlay();
+
+      // Load daily logs first if on flock view, then build preview
+      const needsLogs = app && app.currentView === 'flock' && app.currentFlock;
+      const loader = needsLogs ? app.loadDailyLogs() : Promise.resolve();
+      loader.then(() => buildPreview()).catch(() => buildPreview());
+
+      function buildPreview() {
       const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
       // Try to pull data from the current page's rendered summary/flock view
@@ -10763,6 +10895,7 @@ Current data will be REPLACED. Are you sure?`,
 
       body.innerHTML = content;
       openPreviewOverlay();
+      } // end buildPreview
     }
     // ===== END PRINT PREVIEW =====
 
@@ -10783,12 +10916,25 @@ Current data will be REPLACED. Are you sure?`,
       const body = document.getElementById('printPreviewBody');
       if (!app || !app.currentFlock) return;
 
+      // Show loading state immediately
+      body.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Loading data...</p>';
+      openPreviewOverlay();
+
+      // Load logs first, then render
+      app.loadDailyLogs().then(() => {
+        buildMortalityOverlay();
+      }).catch(() => {
+        buildMortalityOverlay(); // render with whatever data we have
+      });
+
+      function buildMortalityOverlay() {
+
       const flock = app.currentFlock;
       const logs = app.dailyLogs || [];
       const farmName = (app.settings && app.settings.farmName) ? app.settings.farmName : 'Farm';
       const flockId = flock.id || '—';
-      const placed = flock.placed || 0;
-      const placedDate = flock.placedDate || flock.startDate || null;
+      const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,"")) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,"")) || parseFloat(String(flock.numBirds||0).replace(/[,$]/g,"")) || 0;
+      const placedDate = flock.placedDate || flock.startDate || flock.startedDate || null;
       const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
       // Build a map of date -> deaths from daily logs
@@ -10803,7 +10949,7 @@ Current data will be REPLACED. Are you sure?`,
       let runningTotal = 0;
       const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
 
-      const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
+      const fmtD = d => String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
       const toYMD = d => d.toISOString().split('T')[0];
 
       for (let w = 1; w <= WEEKS; w++) {
@@ -10856,7 +11002,7 @@ Current data will be REPLACED. Are you sure?`,
             <div class="mort-week-header">
               <span>Week ${w}</span>
               <span style="font-size:11px; font-weight:400;">${weekRange}</span>
-              ${weekDeaths > 0 ? `<span style="color:#7f1d1d; background:#fca5a5; padding:2px 8px; border-radius:12px; font-size:12px;">💀 ${weekDeaths}</span>` : ''}
+              ${weekDeaths > 0 ? `<span style="color:#7f1d1d; background:#fca5a5; padding:2px 8px; border-radius:12px; font-size:12px;">${weekDeaths}</span>` : ''}
             </div>
             <div class="mort-week-days">${dayCellsHtml}</div>
             <div class="mort-week-totals">
@@ -10878,8 +11024,8 @@ Current data will be REPLACED. Are you sure?`,
       }
 
       // Totals
-      const totalMortPct = placed > 0 ? ((runningTotal / placed) * 100).toFixed(2) : '0.00';
-      const finalLivability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) : '100.00';
+      const totalMortPct = placed > 0 ? ((runningTotal / placed) * 100).toFixed(2) : 'N/A';
+      const finalLivability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) : 'N/A';
       const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
 
       body.innerHTML = `
@@ -10917,7 +11063,7 @@ Current data will be REPLACED. Are you sure?`,
           <div class="mort-stats">
             <div class="mort-stat-box" style="background:#f0fdf4;">
               <div class="mort-stat-label">Birds Placed</div>
-              <div class="mort-stat-val" style="color:#111;">${placed.toLocaleString()}</div>
+              <div class="mort-stat-val" style="color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️ Not Set'}</div>
             </div>
             <div class="mort-stat-box" style="background:#fef2f2;">
               <div class="mort-stat-label">Total Dead</div>
@@ -10925,11 +11071,11 @@ Current data will be REPLACED. Are you sure?`,
             </div>
             <div class="mort-stat-box" style="background:#fffbeb;">
               <div class="mort-stat-label">Mortality %</div>
-              <div class="mort-stat-val" style="color:#d97706;">${totalMortPct}%</div>
+              <div class="mort-stat-val" style="color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
             </div>
             <div class="mort-stat-box" style="background:#f0fdf4;">
               <div class="mort-stat-label">Livability</div>
-              <div class="mort-stat-val" style="color:#16a34a;">${finalLivability}%</div>
+              <div class="mort-stat-val" style="color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
             </div>
           </div>
 
@@ -10949,6 +11095,7 @@ Current data will be REPLACED. Are you sure?`,
       `;
 
       openPreviewOverlay();
+      } // end buildMortalityOverlay
     }
     // ===== END MORTALITY SHEET =====
 
