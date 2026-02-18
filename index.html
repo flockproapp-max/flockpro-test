@@ -333,8 +333,6 @@
     }
     
     html {
-      scroll-behavior: smooth;
-      overscroll-behavior-y: contain !important;
       height: 100%;
     }
     
@@ -342,18 +340,17 @@
       font-family: 'DM Sans', sans-serif;
       background: #000000;
       color: #fff;
-      min-height: 100vh;
       height: 100%;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      overscroll-behavior-y: contain;
-      overscroll-behavior-x: auto;
       will-change: background-color;
       position: fixed;
-      width: 100%;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       overflow: hidden;
       touch-action: pan-x pan-y pinch-zoom;
-      /* Prevent iOS Safari from auto-shrinking text */
       -webkit-text-size-adjust: 100%;
       -moz-text-size-adjust: 100%;
       text-size-adjust: 100%;
@@ -382,15 +379,15 @@
     
     /* Main container to handle scrolling */
     #app {
-      height: 100vh;
-      overflow-y: auto;
-      overflow-x: auto;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      overflow-y: scroll;
+      overflow-x: hidden;
       overscroll-behavior-y: contain;
-      overscroll-behavior-x: auto;
       -webkit-overflow-scrolling: touch;
-      /* Fix: when zoomed on mobile, ensure scroll boundaries reset correctly */
-      min-height: 100%;
-      transform: translateZ(0); /* Force GPU layer so scroll container recalculates after zoom */
     }
     
     /* Custom Scrollbar */
@@ -4120,7 +4117,6 @@
 
       init() {
         this.preventPullToRefresh();
-        this.fixZoomScroll();
         this.protectBackButton();
         this.setupUnloadWarning();
         this.trackUserActivity();
@@ -4139,41 +4135,47 @@
             e.preventDefault();
           }
         }, { passive: false });
-      }
 
-      fixZoomScroll() {
-        // When the user pinch-zooms and then tries to scroll, iOS/Android can
-        // get the scroll container stuck at the top or bottom because the
-        // scroll boundaries aren't recalculated after a zoom gesture.
-        // Fix: when zoom ends (visualViewport scale returns to ~1, or on
-        // gesture end), nudge the scroll position so the browser re-evaluates bounds.
-        const app = document.getElementById('app');
-        if (!app) return;
-
-        // Use visualViewport API if available (modern iOS/Android)
+        // Fix zoom-scroll getting stuck on iOS Safari AND Android Chrome.
+        //
+        // The problem: body is position:fixed so #app is the scroll container.
+        // When the user pinch-zooms, both browsers zoom the visual viewport
+        // but keep #app's scroll boundaries based on the original layout size.
+        // Android Chrome: can get stuck because the scrollable area doesn't
+        //   update to reflect the zoomed content height.
+        // iOS Safari: visual viewport scrolls independently of the DOM, so
+        //   panning while zoomed can appear to do nothing or snap back.
+        //
+        // Fix: use the visualViewport API (supported on both Android Chrome 61+
+        // and iOS Safari 13+) to reposition #app so it always aligns with
+        // what the user can actually see, making scroll feel natural at any zoom.
         if (window.visualViewport) {
-          let lastScale = window.visualViewport.scale;
-          window.visualViewport.addEventListener('resize', () => {
-            const currentScale = window.visualViewport.scale;
-            // Zoom just ended (returned to or near 1x)
-            if (lastScale !== 1 && currentScale <= 1.05) {
-              // Tiny nudge forces scroll container to recalculate boundaries
-              const saved = app.scrollTop;
-              app.scrollTop = saved + 1;
-              app.scrollTop = saved;
-            }
-            lastScale = currentScale;
-          });
-        }
+          const app = document.getElementById('app');
 
-        // Fallback: gestureend fires on Safari when a pinch ends
-        document.addEventListener('gestureend', () => {
-          const saved = app.scrollTop;
-          requestAnimationFrame(() => {
-            app.scrollTop = saved + 1;
-            app.scrollTop = saved;
-          });
-        }, { passive: true });
+          const handleViewport = () => {
+            if (!app) return;
+            const vv = window.visualViewport;
+            if (vv.scale > 1.01) {
+              // Zoomed in: pin #app's top-left to the visual viewport offset
+              // so scrolling inside #app matches what the user sees
+              app.style.position = 'fixed';
+              app.style.top = vv.offsetTop + 'px';
+              app.style.left = vv.offsetLeft + 'px';
+              app.style.width = vv.width + 'px';
+              app.style.height = vv.height + 'px';
+            } else {
+              // Back to normal zoom - restore #app to fill the full screen
+              app.style.position = 'absolute';
+              app.style.top = '0';
+              app.style.left = '0';
+              app.style.width = '';
+              app.style.height = '';
+            }
+          };
+
+          window.visualViewport.addEventListener('scroll', handleViewport);
+          window.visualViewport.addEventListener('resize', handleViewport);
+        }
       }
 
       protectBackButton() {
@@ -6279,15 +6281,6 @@
       }
 
       render() {
-        // Always scroll the app container back to the top on each render.
-        // Because body is position:fixed, window.scrollTo does nothing —
-        // #app is the real scroll container. Without this, navigating between
-        // pages leaves you at whatever scroll position the previous page had,
-        // and after a pinch-zoom iOS can miscalculate the boundaries and trap
-        // you at the bottom.
-        const appEl = document.getElementById('app');
-        if (appEl) appEl.scrollTop = 0;
-
         const root = document.getElementById('root');
         
         // v1.3: Check maintenance mode first — show to everyone (including logged-out users)
@@ -9594,7 +9587,7 @@
         }
         
         // Scroll to top to show the report
-        const _appEl = document.getElementById('app'); if (_appEl) _appEl.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         // Re-render to show the report with selected flocks
         this.render();
