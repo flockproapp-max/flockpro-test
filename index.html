@@ -570,7 +570,7 @@
     /* ===== PRINT PREVIEW OVERLAY ===== */
     #printPreviewOverlay {
       display: none;
-      position: absolute; /* absolute inside fixed body - same pattern as #app, prevents zoom-scroll getting stuck */
+      position: fixed;
       top: 0;
       left: 0;
       right: 0;
@@ -11006,6 +11006,15 @@ Current data will be REPLACED. Are you sure?`,
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.add('active');
       overlay.scrollTop = 0;
+      // Add a spacer at the bottom of the body so zoom-scroll never gets stuck
+      // at the last element. Removed and re-added each time to stay current.
+      const body = document.getElementById('printPreviewBody');
+      const existing = body.querySelector('.print-scroll-spacer');
+      if (existing) existing.remove();
+      const spacer = document.createElement('div');
+      spacer.className = 'print-scroll-spacer';
+      spacer.style.cssText = 'height:200px;width:100%;display:block;';
+      body.appendChild(spacer);
     }
 
     // ===== MORTALITY SHEET PRINT PREVIEW =====
