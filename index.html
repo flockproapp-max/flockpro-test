@@ -579,11 +579,12 @@
       z-index: 99999;
       background: #f0f0f0;
       overflow-y: auto;
-      overflow-x: auto;
+      overflow-x: hidden;
       overscroll-behavior-y: contain;
-      overscroll-behavior-x: auto;
       -webkit-overflow-scrolling: touch;
-      touch-action: pan-x pan-y pinch-zoom;
+      touch-action: pan-y;
+      box-sizing: border-box;
+      width: 100%;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -638,6 +639,8 @@
       font-family: Arial, sans-serif;
       font-size: 14px;
       line-height: 1.5;
+      box-sizing: border-box;
+      width: calc(100% - 16px);
     }
     #printPreviewBody h1 { font-size: 22px; margin: 0 0 4px 0; color: #111; }
     #printPreviewBody h2 { font-size: 16px; margin: 20px 0 8px 0; border-bottom: 2px solid #22c55e; padding-bottom: 4px; color: #111; }
@@ -10881,12 +10884,12 @@ Current data will be REPLACED. Are you sure?`,
 
       body.innerHTML = `
         <style>
-          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px; }
+          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px; box-sizing:border-box; }
           .mort-header { text-align:center; border-bottom:3px solid #22c55e; padding-bottom:14px; margin-bottom:16px; }
           .mort-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
-          .mort-stat-box { border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; }
+          .mort-stat-box { border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; box-sizing:border-box; min-width:0; }
           .mort-stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em; }
-          .mort-stat-val { font-size:18px; font-weight:700; margin-top:4px; }
+          .mort-stat-val { font-size:clamp(14px,5vw,18px); font-weight:700; margin-top:4px; word-break:break-word; }
           /* Mobile: week cards */
           .mort-week-card { background:#f9f9f9; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; overflow:hidden; }
           .mort-week-header { background:#22c55e; color:#000; font-weight:700; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; }
