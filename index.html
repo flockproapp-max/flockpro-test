@@ -6286,6 +6286,9 @@
           case 'flock':
             content += this.renderFlock();
             break;
+          case 'mortality':
+            content += this.renderMortalityPage();
+            break;
           case 'notes':
             content += this.renderNotes();
             break;
@@ -7674,7 +7677,7 @@
           <div class="arduino-card" style="background:#111 !important; border-color:#2a2a2a !important; color:#fff !important;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h3 style="margin:0; color:#fff !important;">📅 Daily Log — Flock #${this.escapeHtml(String(this.currentFlock.id))}</h3>
-              <button onclick="showMortalitySheet()" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
+              <button onclick="app.currentView='mortality'; app.render();" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
             </div>
 
             <!-- Bird Stats Bar -->
@@ -7737,6 +7740,256 @@
             `}
           </div>
         `;
+      }
+
+      renderMortalityTab() {
+        const logs = this.dailyLogs || [];
+        const flock = this.currentFlock;
+        const placed = flock.placed || 0;
+        const placedDate = flock.placedDate || flock.startDate || null;
+        const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
+        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const WEEKS = 22;
+
+        const deathsByDate = {};
+        logs.forEach(l => {
+          if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0);
+        });
+
+        const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
+        const toYMD = d => d.toISOString().split('T')[0];
+
+        let weekCards = '';
+        let runningTotal = 0;
+
+        for (let w = 1; w <= WEEKS; w++) {
+          const dayCells = [];
+          let weekDeaths = 0;
+          let weekStartDate = null;
+          let weekEndDate = null;
+
+          for (let d = 0; d < 7; d++) {
+            const dayIndex = (w - 1) * 7 + d;
+            let dayDeaths = 0;
+            let dayLabel = '';
+            if (base) {
+              const dayDate = new Date(base);
+              dayDate.setDate(base.getDate() + dayIndex);
+              const ymd = toYMD(dayDate);
+              dayDeaths = deathsByDate[ymd] || 0;
+              dayLabel = fmtD(dayDate);
+              if (d === 0) weekStartDate = dayDate;
+              if (d === 6) weekEndDate = dayDate;
+            } else {
+              dayLabel = 'D' + (dayIndex + 1);
+            }
+            weekDeaths += dayDeaths;
+            dayCells.push({ dayDeaths, dayLabel });
+          }
+
+          runningTotal += weekDeaths;
+          const birdsLeft = placed > 0 ? placed - runningTotal : placed;
+          const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths / placed) * 100).toFixed(2) + '%' : '—';
+          const livability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) + '%' : '—';
+          const weekRange = base ? (fmtD(weekStartDate) + ' – ' + fmtD(weekEndDate)) : ('Days ' + ((w-1)*7+1) + '–' + (w*7));
+
+          const dayCellsHtml = DAY_NAMES.map((name, i) => {
+            const c = dayCells[i];
+            const color = c.dayDeaths > 0 ? '#ef4444' : '#555';
+            const weight = c.dayDeaths > 0 ? '700' : '400';
+            return `<div style="text-align:center; flex:1; min-width:0; padding:4px 2px; border-right:1px solid #2a2a2a;">
+              <div style="font-size:9px; color:#666; margin-bottom:1px;">${name}</div>
+              <div style="font-size:9px; color:#555; margin-bottom:2px;">${c.dayLabel}</div>
+              <div style="font-size:12px; color:${color}; font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            </div>`;
+          }).join('');
+
+          weekCards += `
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; margin-bottom:10px; overflow:hidden;">
+              <div style="background:${weekDeaths > 0 ? '#166534' : '#111'}; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#22c55e; font-weight:700; font-size:14px;">Week ${w}</span>
+                <span style="color:#888; font-size:11px;">${weekRange}</span>
+                ${weekDeaths > 0 ? `<span style="background:#dc2626; color:#fff; padding:2px 8px; border-radius:10px; font-size:12px; font-weight:700;">💀 ${weekDeaths}</span>` : '<span style="color:#555; font-size:12px;">No deaths</span>'}
+              </div>
+              <div style="display:flex; border-bottom:1px solid #2a2a2a;">${dayCellsHtml}</div>
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); padding:8px 12px; gap:8px;">
+                <div style="text-align:center;">
+                  <div style="font-size:9px; color:#666; text-transform:uppercase;">Wk Mort%</div>
+                  <div style="font-size:13px; font-weight:700; color:${weekDeaths>0?'#ef4444':'#555'}; margin-top:2px;">${weekMortPct}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:9px; color:#666; text-transform:uppercase;">Total Dead</div>
+                  <div style="font-size:13px; font-weight:700; color:${runningTotal>0?'#ef4444':'#555'}; margin-top:2px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:9px; color:#666; text-transform:uppercase;">Livability</div>
+                  <div style="font-size:13px; font-weight:700; color:#22c55e; margin-top:2px;">${livability}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const totalDead = logs.reduce((s, l) => s + (l.deaths || 0), 0);
+        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : '0.00';
+        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : '100.00';
+
+        return `
+          <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px;">
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:9px; color:#666; text-transform:uppercase;">Birds Placed</div>
+              <div style="font-size:20px; font-weight:700; color:#fff; margin-top:4px;">${placed.toLocaleString()}</div>
+            </div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:9px; color:#666; text-transform:uppercase;">Total Dead</div>
+              <div style="font-size:20px; font-weight:700; color:#ef4444; margin-top:4px;">${totalDead.toLocaleString()}</div>
+            </div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:9px; color:#666; text-transform:uppercase;">Mortality %</div>
+              <div style="font-size:20px; font-weight:700; color:#f59e0b; margin-top:4px;">${totalMortPct}%</div>
+            </div>
+            <div style="background:#1a1a1a; border:1px solid #2a2a2a; border-radius:10px; padding:12px; text-align:center;">
+              <div style="font-size:9px; color:#666; text-transform:uppercase;">Livability</div>
+              <div style="font-size:20px; font-weight:700; color:#22c55e; margin-top:4px;">${finalLivability}%</div>
+            </div>
+          </div>
+          ${weekCards}
+        `;
+      }
+
+      renderMortalityPage() {
+        const logs = this.dailyLogs || [];
+        const flock = this.currentFlock;
+        if (!flock) return '';
+        const placed = flock.placed || 0;
+        const placedDate = flock.placedDate || flock.startDate || null;
+        const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
+        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const WEEKS = 22;
+        const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+        const farmName = (this.settings && this.settings.farmName) ? this.settings.farmName : 'Farm';
+
+        const deathsByDate = {};
+        logs.forEach(l => { if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0); });
+
+        const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
+        const toYMD = d => d.toISOString().split('T')[0];
+
+        let weekCards = '';
+        let runningTotal = 0;
+
+        for (let w = 1; w <= WEEKS; w++) {
+          const dayCells = [];
+          let weekDeaths = 0;
+          let weekStartDate = null, weekEndDate = null;
+
+          for (let d = 0; d < 7; d++) {
+            const dayIndex = (w - 1) * 7 + d;
+            let dayDeaths = 0, dayLabel = '';
+            if (base) {
+              const dayDate = new Date(base);
+              dayDate.setDate(base.getDate() + dayIndex);
+              const ymd = toYMD(dayDate);
+              dayDeaths = deathsByDate[ymd] || 0;
+              dayLabel = fmtD(dayDate);
+              if (d === 0) weekStartDate = dayDate;
+              if (d === 6) weekEndDate = dayDate;
+            } else {
+              dayLabel = 'D' + (dayIndex + 1);
+            }
+            weekDeaths += dayDeaths;
+            dayCells.push({ dayDeaths, dayLabel });
+          }
+
+          runningTotal += weekDeaths;
+          const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths / placed) * 100).toFixed(2) + '%' : '—';
+          const livability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) + '%' : '—';
+          const weekRange = base ? (fmtD(weekStartDate) + ' – ' + fmtD(weekEndDate)) : ('Days ' + ((w-1)*7+1) + '–' + (w*7));
+
+          const dayCellsHtml = DAY_NAMES.map((name, i) => {
+            const c = dayCells[i];
+            const color = c.dayDeaths > 0 ? '#dc2626' : '#999';
+            return `<div style="text-align:center;flex:1;min-width:0;padding:10px 2px;border-right:1px solid #e5e5e5;">
+              <div style="font-size:14px;color:#444;font-weight:700;margin-bottom:3px;">${name}</div>
+              <div style="font-size:13px;color:#aaa;margin-bottom:5px;">${c.dayLabel}</div>
+              <div style="font-size:20px;color:${color};font-weight:${c.dayDeaths>0?'700':'400'};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            </div>`;
+          }).join('');
+
+          weekCards += `
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <div style="background:${weekDeaths>0?'#166534':'#22c55e'};padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#fff;font-weight:700;font-size:20px;">Week ${w}</span>
+                <span style="color:rgba(255,255,255,0.9);font-size:15px;">${weekRange}</span>
+                ${weekDeaths > 0 ? `<span style="background:#dc2626;color:#fff;padding:4px 12px;border-radius:10px;font-size:16px;font-weight:700;">💀 ${weekDeaths}</span>` : '<span style="color:rgba(255,255,255,0.8);font-size:15px;">No deaths</span>'}
+              </div>
+              <div style="display:flex;border-bottom:1px solid #e5e5e5;">${dayCellsHtml}</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);padding:12px 16px;gap:8px;background:#fafafa;">
+                <div style="text-align:center;">
+                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Wk Mort%</div>
+                  <div style="font-size:22px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#bbb'};margin-top:4px;">${weekMortPct}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Total Dead</div>
+                  <div style="font-size:22px;font-weight:700;color:${runningTotal>0?'#dc2626':'#bbb'};margin-top:4px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+                </div>
+                <div style="text-align:center;">
+                  <div style="font-size:13px;color:#888;text-transform:uppercase;font-weight:600;">Livability</div>
+                  <div style="font-size:22px;font-weight:700;color:#16a34a;margin-top:4px;">${livability}</div>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        const totalDead = logs.reduce((s, l) => s + (l.deaths || 0), 0);
+        const totalMortPct = placed > 0 ? ((totalDead / placed) * 100).toFixed(2) : '0.00';
+        const finalLivability = placed > 0 ? (((placed - totalDead) / placed) * 100).toFixed(2) : '100.00';
+
+        return `
+          <div style="background:#f0f0f0;min-height:100vh;padding:12px;">
+            <!-- Toolbar -->
+            <div style="background:#1a1a1a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
+              <span style="color:#22c55e;font-weight:700;font-size:0.95em;">🖨️ Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</span>
+              <div style="display:flex;gap:8px;">
+                <button onclick="window.print()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
+                <button onclick="app.currentView='flock'; app.flockTab='daily'; app.render();" style="background:#444;color:#fff;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">✕ Close</button>
+              </div>
+            </div>
+
+            <!-- White print area -->
+            <div style="background:#fff;border-radius:10px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+              <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:12px;margin-bottom:16px;">
+                <div style="font-size:20px;font-weight:700;color:#111;">${this.escapeHtml(farmName)}</div>
+                <div style="font-size:15px;font-weight:600;color:#333;margin-top:4px;">22-Week Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">Generated: ${now}</div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
+                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Birds Placed</div>
+                  <div style="font-size:34px;font-weight:700;color:#111;margin-top:6px;">${placed.toLocaleString()}</div>
+                </div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fef2f2;">
+                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Total Dead</div>
+                  <div style="font-size:34px;font-weight:700;color:#dc2626;margin-top:6px;">${totalDead.toLocaleString()}</div>
+                </div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fffbeb;">
+                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Mortality %</div>
+                  <div style="font-size:34px;font-weight:700;color:#d97706;margin-top:6px;">${totalMortPct}%</div>
+                </div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
+                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Livability</div>
+                  <div style="font-size:34px;font-weight:700;color:#16a34a;margin-top:6px;">${finalLivability}%</div>
+                </div>
+              </div>
+
+              ${weekCards}
+
+              <div style="margin-top:16px;padding-top:10px;border-top:1px solid #e5e5e5;font-size:10px;color:#aaa;text-align:center;">
+                FlockPro v2.1 · ${this.escapeHtml(farmName)} · Flock #${this.escapeHtml(String(flock.id))} · ${now}
+              </div>
+            </div>
+          </div>`;
       }
 
       async loadDailyLogs() {
