@@ -6279,6 +6279,15 @@
       }
 
       render() {
+        // Always scroll the app container back to the top on each render.
+        // Because body is position:fixed, window.scrollTo does nothing —
+        // #app is the real scroll container. Without this, navigating between
+        // pages leaves you at whatever scroll position the previous page had,
+        // and after a pinch-zoom iOS can miscalculate the boundaries and trap
+        // you at the bottom.
+        const appEl = document.getElementById('app');
+        if (appEl) appEl.scrollTop = 0;
+
         const root = document.getElementById('root');
         
         // v1.3: Check maintenance mode first — show to everyone (including logged-out users)
@@ -9585,7 +9594,7 @@
         }
         
         // Scroll to top to show the report
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        const _appEl = document.getElementById('app'); if (_appEl) _appEl.scrollTop = 0;
         
         // Re-render to show the report with selected flocks
         this.render();
