@@ -346,13 +346,13 @@
       height: 100%;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      overscroll-behavior-y: contain !important;
-      overscroll-behavior-x: auto; /* Changed from contain to auto - allows horizontal scroll when zoomed */
+      overscroll-behavior-y: contain;
+      overscroll-behavior-x: auto;
       will-change: background-color;
       position: fixed;
       width: 100%;
       overflow: hidden;
-      touch-action: pan-x pan-y pinch-zoom; /* Allow pan in both directions plus pinch zoom */
+      touch-action: pan-x pan-y pinch-zoom;
       /* Prevent iOS Safari from auto-shrinking text */
       -webkit-text-size-adjust: 100%;
       -moz-text-size-adjust: 100%;
@@ -384,10 +384,13 @@
     #app {
       height: 100vh;
       overflow-y: auto;
-      overflow-x: auto; /* Changed from hidden to auto - allows horizontal scroll when zoomed */
-      overscroll-behavior-y: contain; /* Only prevent pull-to-refresh, allow horizontal pan */
-      overscroll-behavior-x: auto; /* Allow horizontal scroll when zoomed */
+      overflow-x: auto;
+      overscroll-behavior-y: contain;
+      overscroll-behavior-x: auto;
       -webkit-overflow-scrolling: touch;
+      /* Fix: when zoomed on mobile, ensure scroll boundaries reset correctly */
+      min-height: 100%;
+      transform: translateZ(0); /* Force GPU layer so scroll container recalculates after zoom */
     }
     
     /* Custom Scrollbar */
@@ -4117,6 +4120,7 @@
 
       init() {
         this.preventPullToRefresh();
+        this.fixZoomScroll();
         this.protectBackButton();
         this.setupUnloadWarning();
         this.trackUserActivity();
@@ -4135,6 +4139,41 @@
             e.preventDefault();
           }
         }, { passive: false });
+      }
+
+      fixZoomScroll() {
+        // When the user pinch-zooms and then tries to scroll, iOS/Android can
+        // get the scroll container stuck at the top or bottom because the
+        // scroll boundaries aren't recalculated after a zoom gesture.
+        // Fix: when zoom ends (visualViewport scale returns to ~1, or on
+        // gesture end), nudge the scroll position so the browser re-evaluates bounds.
+        const app = document.getElementById('app');
+        if (!app) return;
+
+        // Use visualViewport API if available (modern iOS/Android)
+        if (window.visualViewport) {
+          let lastScale = window.visualViewport.scale;
+          window.visualViewport.addEventListener('resize', () => {
+            const currentScale = window.visualViewport.scale;
+            // Zoom just ended (returned to or near 1x)
+            if (lastScale !== 1 && currentScale <= 1.05) {
+              // Tiny nudge forces scroll container to recalculate boundaries
+              const saved = app.scrollTop;
+              app.scrollTop = saved + 1;
+              app.scrollTop = saved;
+            }
+            lastScale = currentScale;
+          });
+        }
+
+        // Fallback: gestureend fires on Safari when a pinch ends
+        document.addEventListener('gestureend', () => {
+          const saved = app.scrollTop;
+          requestAnimationFrame(() => {
+            app.scrollTop = saved + 1;
+            app.scrollTop = saved;
+          });
+        }, { passive: true });
       }
 
       protectBackButton() {
