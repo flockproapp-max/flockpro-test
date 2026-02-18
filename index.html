@@ -578,6 +578,7 @@
       overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
+      touch-action: pan-y;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -10509,19 +10510,10 @@ Current data will be REPLACED. Are you sure?`,
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.remove('active');
       document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      window.scrollTo(0, parseInt(document.body.dataset.scrollY || '0'));
     }
 
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
-      const scrollY = window.scrollY;
-      document.body.dataset.scrollY = scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
       overlay.classList.add('active');
       overlay.scrollTop = 0;
@@ -10615,7 +10607,7 @@ Current data will be REPLACED. Are you sure?`,
                 <div class="mort-week-total-val" style="color:${weekDeaths>0?'#dc2626':'#aaa'};">${weekMortPct}</div>
               </div>
               <div class="mort-week-total-item">
-                <div class="mort-week-total-label">Cum Dead</div>
+                <div class="mort-week-total-label">Total Dead</div>
                 <div class="mort-week-total-val" style="color:${runningTotal>0?'#dc2626':'#aaa'};">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
               </div>
               <div class="mort-week-total-item">
