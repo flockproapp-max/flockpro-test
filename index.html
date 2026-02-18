@@ -10826,11 +10826,11 @@ Current data will be REPLACED. Are you sure?`,
       }, 50);
     }
 
-
+    function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.add('active');
       overlay.scrollTop = 0;
-      // On mobile, scroll body to top and prevent background scroll
+      // On mobile, prevent background scroll
       document.body.style.overflow = 'hidden';
     }
 
