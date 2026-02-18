@@ -578,10 +578,15 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: auto;
+      overscroll-behavior-y: contain;
+      overscroll-behavior-x: auto;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y pinch-zoom;
     }
     #printPreviewOverlay.active {
-      display: flex;
+      display: block;
     }
     #printPreviewToolbar {
       position: sticky;
@@ -624,11 +629,11 @@
       color: #fff;
     }
     #printPreviewBody {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      padding: 16px;
+      max-width: 900px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 24px;
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
