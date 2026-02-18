@@ -575,8 +575,9 @@
       inset: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: auto;
+      overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -3792,7 +3793,7 @@
       <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
       <div class="toolbar-actions">
         <button class="btn-print-now" onclick="window.print()">🖨️ Print Now</button>
-        <button class="btn-close-preview" onclick="document.getElementById('printPreviewOverlay').classList.remove('active'); document.body.style.overflow=''; document.body.style.position='';">✕ Close Preview</button>
+        <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close Preview</button>
       </div>
     </div>
     <div id="printPreviewBody"></div>
@@ -10500,11 +10501,31 @@ Current data will be REPLACED. Are you sure?`,
       }
 
       body.innerHTML = content;
-      overlay.classList.add('active');
-      overlay.scrollTop = 0;
-      document.body.style.overflow = 'hidden';
+      openPreviewOverlay();
     }
     // ===== END PRINT PREVIEW =====
+
+    function closePreviewOverlay() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, parseInt(document.body.dataset.scrollY || '0'));
+    }
+
+    function openPreviewOverlay() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      const scrollY = window.scrollY;
+      document.body.dataset.scrollY = scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+      overlay.classList.add('active');
+      overlay.scrollTop = 0;
+    }
 
     // ===== MORTALITY SHEET PRINT PREVIEW =====
     function showMortalitySheet() {
@@ -10528,30 +10549,26 @@ Current data will be REPLACED. Are you sure?`,
 
       const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const WEEKS = 22;
-      let weekRows = '';
+      let weekCards = '';
       let runningTotal = 0;
       const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
 
-      // Helper: format date as M/D
       const fmtD = d => (d.getMonth()+1) + '/' + d.getDate();
-      // Helper: get YYYY-MM-DD string for a date
       const toYMD = d => d.toISOString().split('T')[0];
 
       for (let w = 1; w <= WEEKS; w++) {
-        // Build per-day death counts for this week (7 days)
         const dayCells = [];
         let weekDeaths = 0;
         let weekStartDate = null;
         let weekEndDate = null;
 
         for (let d = 0; d < 7; d++) {
-          const dayIndex = (w - 1) * 7 + d; // days since placement
-          let dayDate = null;
+          const dayIndex = (w - 1) * 7 + d;
           let dayDeaths = 0;
-          let dayLabel = ''; // date label shown under day name
+          let dayLabel = '';
 
           if (base) {
-            dayDate = new Date(base);
+            const dayDate = new Date(base);
             dayDate.setDate(base.getDate() + dayIndex);
             const ymd = toYMD(dayDate);
             dayDeaths = deathsByDate[ymd] || 0;
@@ -10559,7 +10576,7 @@ Current data will be REPLACED. Are you sure?`,
             if (d === 0) weekStartDate = dayDate;
             if (d === 6) weekEndDate = dayDate;
           } else {
-            dayLabel = 'Day ' + (dayIndex + 1);
+            dayLabel = 'D' + (dayIndex + 1);
           }
 
           weekDeaths += dayDeaths;
@@ -10571,31 +10588,42 @@ Current data will be REPLACED. Are you sure?`,
         const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths / placed) * 100).toFixed(2) + '%' : '—';
         const cumMortPct = placed > 0 ? ((runningTotal / placed) * 100).toFixed(2) + '%' : '—';
         const livability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) + '%' : '—';
-
         const weekRange = base ? (fmtD(weekStartDate) + ' – ' + fmtD(weekEndDate)) : ('Days ' + ((w-1)*7+1) + '–' + (w*7));
-        const rowBg = w % 2 === 0 ? '#f9f9f9' : '#ffffff';
 
-        // Build 7 day death cells
-        const dayCellsHtml = dayCells.map(c => {
+        const dayCellsHtml = DAY_NAMES.map((name, i) => {
+          const c = dayCells[i];
           const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
           const weight = c.dayDeaths > 0 ? '700' : '400';
-          return `<td style="padding:4px 2px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:${weight}; font-size:11px;">
-            <div style="font-size:9px; color:#aaa; margin-bottom:1px;">${c.dayLabel}</div>
-            ${c.dayDeaths > 0 ? c.dayDeaths.toLocaleString() : '—'}
-          </td>`;
+          return `<div class="mort-day-cell">
+            <div class="mort-day-name">${name}</div>
+            <div class="mort-day-date">${c.dayLabel}</div>
+            <div style="color:${color}; font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+          </div>`;
         }).join('');
 
-        weekRows += `
-          <tr style="background:${rowBg};">
-            <td style="padding:5px 6px; border:1px solid #ddd; text-align:center; font-weight:700; color:#333; font-size:12px; white-space:nowrap;">${w}<br><span style="font-size:9px; font-weight:400; color:#888;">${weekRange}</span></td>
-            ${dayCellsHtml}
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:${weekDeaths>0?'#dc2626':'#bbb'}; font-weight:${weekDeaths>0?'700':'400'}; font-size:12px;">${weekDeaths > 0 ? weekDeaths.toLocaleString() : '—'}</td>
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#666; font-size:11px;">${weekMortPct}</td>
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; font-weight:600; color:#dc2626; font-size:12px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</td>
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#dc2626; font-size:11px;">${cumMortPct}</td>
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#16a34a; font-weight:600; font-size:12px;">${birdsLeft.toLocaleString()}</td>
-            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#d97706; font-size:11px;">${livability}</td>
-          </tr>
+        weekCards += `
+          <div class="mort-week-card">
+            <div class="mort-week-header">
+              <span>Week ${w}</span>
+              <span style="font-size:11px; font-weight:400;">${weekRange}</span>
+              ${weekDeaths > 0 ? `<span style="color:#7f1d1d; background:#fca5a5; padding:2px 8px; border-radius:12px; font-size:12px;">💀 ${weekDeaths}</span>` : ''}
+            </div>
+            <div class="mort-week-days">${dayCellsHtml}</div>
+            <div class="mort-week-totals">
+              <div class="mort-week-total-item">
+                <div class="mort-week-total-label">Wk Mort%</div>
+                <div class="mort-week-total-val" style="color:${weekDeaths>0?'#dc2626':'#aaa'};">${weekMortPct}</div>
+              </div>
+              <div class="mort-week-total-item">
+                <div class="mort-week-total-label">Cum Dead</div>
+                <div class="mort-week-total-val" style="color:${runningTotal>0?'#dc2626':'#aaa'};">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+              </div>
+              <div class="mort-week-total-item">
+                <div class="mort-week-total-label">Livability</div>
+                <div class="mort-week-total-val" style="color:#16a34a;">${livability}</div>
+              </div>
+            </div>
+          </div>
         `;
       }
 
@@ -10604,78 +10632,73 @@ Current data will be REPLACED. Are you sure?`,
       const finalLivability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) : '100.00';
       const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
 
-      // Day name header cells
-      const dayHeadersHtml = DAY_NAMES.map(d =>
-        `<th style="padding:6px 2px; border:1px solid #16a34a; text-align:center; font-size:10px; min-width:38px;">${d}</th>`
-      ).join('');
-
       body.innerHTML = `
-        <div style="font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px;">
-          <div style="text-align:center; border-bottom:3px solid #22c55e; padding-bottom:16px; margin-bottom:20px;">
-            <div style="font-size:22px; font-weight:700; color:#111;">${farmName}</div>
-            <div style="font-size:18px; font-weight:600; color:#333; margin-top:4px;">22-Week Mortality Sheet — Flock #${flockId}</div>
-            <div style="font-size:12px; color:#888; margin-top:4px;">Generated: ${now}</div>
+        <style>
+          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px; }
+          .mort-header { text-align:center; border-bottom:3px solid #22c55e; padding-bottom:14px; margin-bottom:16px; }
+          .mort-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
+          .mort-stat-box { border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; }
+          .mort-stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em; }
+          .mort-stat-val { font-size:18px; font-weight:700; margin-top:4px; }
+          /* Mobile: week cards */
+          .mort-week-card { background:#f9f9f9; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; overflow:hidden; }
+          .mort-week-header { background:#22c55e; color:#000; font-weight:700; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; }
+          .mort-week-days { display:grid; grid-template-columns:repeat(7,1fr); gap:0; border-bottom:1px solid #ddd; }
+          .mort-day-cell { text-align:center; padding:6px 2px; border-right:1px solid #eee; font-size:11px; }
+          .mort-day-cell:last-child { border-right:none; }
+          .mort-day-name { font-size:9px; color:#888; margin-bottom:2px; }
+          .mort-day-date { font-size:9px; color:#aaa; margin-bottom:2px; }
+          .mort-week-totals { display:grid; grid-template-columns:repeat(3,1fr); padding:8px 12px; gap:8px; }
+          .mort-week-total-item { text-align:center; }
+          .mort-week-total-label { font-size:9px; color:#888; text-transform:uppercase; }
+          .mort-week-total-val { font-size:13px; font-weight:700; margin-top:2px; }
+          .mort-summary-totals { background:#1a1a1a; color:#22c55e; border-radius:8px; padding:12px; margin-top:12px; display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+          .mort-summary-item { text-align:center; }
+          .mort-summary-label { font-size:9px; text-transform:uppercase; color:#888; }
+          .mort-summary-val { font-size:16px; font-weight:700; margin-top:2px; }
+        </style>
+        <div class="mort-wrap">
+          <div class="mort-header">
+            <div style="font-size:20px; font-weight:700;">${farmName}</div>
+            <div style="font-size:15px; font-weight:600; color:#333; margin-top:4px;">22-Week Mortality Sheet — Flock #${flockId}</div>
+            <div style="font-size:11px; color:#888; margin-top:4px;">Generated: ${now}</div>
           </div>
 
-          <!-- Summary Stats -->
-          <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;">
-            <div style="border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; background:#f0fdf4;">
-              <div style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Birds Placed</div>
-              <div style="font-size:20px; font-weight:700; color:#111; margin-top:4px;">${placed.toLocaleString()}</div>
+          <div class="mort-stats">
+            <div class="mort-stat-box" style="background:#f0fdf4;">
+              <div class="mort-stat-label">Birds Placed</div>
+              <div class="mort-stat-val" style="color:#111;">${placed.toLocaleString()}</div>
             </div>
-            <div style="border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; background:#fef2f2;">
-              <div style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Total Dead</div>
-              <div style="font-size:20px; font-weight:700; color:#dc2626; margin-top:4px;">${totalDeadFromLogs.toLocaleString()}</div>
+            <div class="mort-stat-box" style="background:#fef2f2;">
+              <div class="mort-stat-label">Total Dead</div>
+              <div class="mort-stat-val" style="color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
             </div>
-            <div style="border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; background:#fffbeb;">
-              <div style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Mortality %</div>
-              <div style="font-size:20px; font-weight:700; color:#d97706; margin-top:4px;">${totalMortPct}%</div>
+            <div class="mort-stat-box" style="background:#fffbeb;">
+              <div class="mort-stat-label">Mortality %</div>
+              <div class="mort-stat-val" style="color:#d97706;">${totalMortPct}%</div>
             </div>
-            <div style="border:1px solid #ddd; border-radius:8px; padding:12px; text-align:center; background:#f0fdf4;">
-              <div style="font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em;">Livability</div>
-              <div style="font-size:20px; font-weight:700; color:#16a34a; margin-top:4px;">${finalLivability}%</div>
+            <div class="mort-stat-box" style="background:#f0fdf4;">
+              <div class="mort-stat-label">Livability</div>
+              <div class="mort-stat-val" style="color:#16a34a;">${finalLivability}%</div>
             </div>
           </div>
 
-          <!-- Mortality Table -->
-          <table style="width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed;">
-            <thead>
-              <tr style="background:#22c55e; color:#000;">
-                <th style="padding:7px 4px; border:1px solid #16a34a; text-align:center; width:70px; font-size:10px;">Week</th>
-                ${dayHeadersHtml}
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Total<br>Deaths</th>
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Wk<br>Mort%</th>
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Cum<br>Dead</th>
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Cum<br>Mort%</th>
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Birds<br>Left</th>
-                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Live<br>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${weekRows}
-            </tbody>
-            <tfoot>
-              <tr style="background:#1a1a1a; color:#22c55e; font-weight:700;">
-                <td colspan="8" style="padding:10px; border:1px solid #333; text-align:center;">TOTALS (22 Weeks)</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#ef4444;">${totalDeadFromLogs.toLocaleString()}</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#ef4444;">${totalMortPct}%</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#ef4444;">${totalDeadFromLogs.toLocaleString()}</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#ef4444;">${totalMortPct}%</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#22c55e;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</td>
-                <td style="padding:10px; border:1px solid #333; text-align:center; color:#22c55e;">${finalLivability}%</td>
-              </tr>
-            </tfoot>
-          </table>
+          ${weekCards}
 
-          <div style="margin-top:24px; padding-top:12px; border-top:1px solid #ddd; font-size:11px; color:#999; text-align:center;">
+          <div class="mort-summary-totals">
+            <div class="mort-summary-item"><div class="mort-summary-label">Total Dead</div><div class="mort-summary-val" style="color:#ef4444;">${totalDeadFromLogs.toLocaleString()}</div></div>
+            <div class="mort-summary-item"><div class="mort-summary-label">Mortality %</div><div class="mort-summary-val" style="color:#ef4444;">${totalMortPct}%</div></div>
+            <div class="mort-summary-item"><div class="mort-summary-label">Birds Left</div><div class="mort-summary-val" style="color:#22c55e;">${(placed - totalDeadFromLogs).toLocaleString()}</div></div>
+            <div class="mort-summary-item"><div class="mort-summary-label">Livability</div><div class="mort-summary-val" style="color:#22c55e;">${finalLivability}%</div></div>
+          </div>
+
+          <div style="margin-top:16px; padding-top:10px; border-top:1px solid #ddd; font-size:10px; color:#999; text-align:center;">
             FlockPro v2.1 · ${farmName} · Flock #${flockId} · ${now}
           </div>
         </div>
       `;
 
-      overlay.classList.add('active');
-      overlay.scrollTop = 0;
-      document.body.style.overflow = 'hidden';
+      openPreviewOverlay();
     }
     // ===== END MORTALITY SHEET =====
 
