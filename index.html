@@ -576,6 +576,7 @@
       z-index: 99999;
       background: #f0f0f0;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -3791,7 +3792,7 @@
       <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
       <div class="toolbar-actions">
         <button class="btn-print-now" onclick="window.print()">🖨️ Print Now</button>
-        <button class="btn-close-preview" onclick="document.getElementById('printPreviewOverlay').classList.remove('active')">✕ Close Preview</button>
+        <button class="btn-close-preview" onclick="document.getElementById('printPreviewOverlay').classList.remove('active'); document.body.style.overflow=''; document.body.style.position='';">✕ Close Preview</button>
       </div>
     </div>
     <div id="printPreviewBody"></div>
@@ -10501,6 +10502,7 @@ Current data will be REPLACED. Are you sure?`,
       body.innerHTML = content;
       overlay.classList.add('active');
       overlay.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
     }
     // ===== END PRINT PREVIEW =====
 
@@ -10524,7 +10526,7 @@ Current data will be REPLACED. Are you sure?`,
         if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0);
       });
 
-      const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const WEEKS = 22;
       let weekRows = '';
       let runningTotal = 0;
@@ -10577,22 +10579,22 @@ Current data will be REPLACED. Are you sure?`,
         const dayCellsHtml = dayCells.map(c => {
           const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
           const weight = c.dayDeaths > 0 ? '700' : '400';
-          return `<td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:${weight}; font-size:12px;">
-            <div style="font-size:10px; color:#888; margin-bottom:2px;">${c.dayLabel}</div>
+          return `<td style="padding:4px 2px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:${weight}; font-size:11px;">
+            <div style="font-size:9px; color:#aaa; margin-bottom:1px;">${c.dayLabel}</div>
             ${c.dayDeaths > 0 ? c.dayDeaths.toLocaleString() : '—'}
           </td>`;
         }).join('');
 
         weekRows += `
           <tr style="background:${rowBg};">
-            <td style="padding:7px 8px; border:1px solid #ddd; text-align:center; font-weight:700; color:#333; font-size:13px; white-space:nowrap;">${w}<br><span style="font-size:10px; font-weight:400; color:#888;">${weekRange}</span></td>
+            <td style="padding:5px 6px; border:1px solid #ddd; text-align:center; font-weight:700; color:#333; font-size:12px; white-space:nowrap;">${w}<br><span style="font-size:9px; font-weight:400; color:#888;">${weekRange}</span></td>
             ${dayCellsHtml}
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; color:${weekDeaths>0?'#dc2626':'#bbb'}; font-weight:${weekDeaths>0?'700':'400'}; font-size:13px;">${weekDeaths > 0 ? weekDeaths.toLocaleString() : '—'}</td>
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; color:#666; font-size:12px;">${weekMortPct}</td>
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; font-weight:600; color:#dc2626; font-size:13px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</td>
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; color:#dc2626; font-size:12px;">${cumMortPct}</td>
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; color:#16a34a; font-weight:600; font-size:13px;">${birdsLeft.toLocaleString()}</td>
-            <td style="padding:7px 6px; border:1px solid #ddd; text-align:center; color:#d97706; font-size:12px;">${livability}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:${weekDeaths>0?'#dc2626':'#bbb'}; font-weight:${weekDeaths>0?'700':'400'}; font-size:12px;">${weekDeaths > 0 ? weekDeaths.toLocaleString() : '—'}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#666; font-size:11px;">${weekMortPct}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; font-weight:600; color:#dc2626; font-size:12px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#dc2626; font-size:11px;">${cumMortPct}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#16a34a; font-weight:600; font-size:12px;">${birdsLeft.toLocaleString()}</td>
+            <td style="padding:5px 4px; border:1px solid #ddd; text-align:center; color:#d97706; font-size:11px;">${livability}</td>
           </tr>
         `;
       }
@@ -10604,11 +10606,11 @@ Current data will be REPLACED. Are you sure?`,
 
       // Day name header cells
       const dayHeadersHtml = DAY_NAMES.map(d =>
-        `<th style="padding:8px 4px; border:1px solid #16a34a; text-align:center; font-size:11px; min-width:52px;">${d}</th>`
+        `<th style="padding:6px 2px; border:1px solid #16a34a; text-align:center; font-size:10px; min-width:38px;">${d}</th>`
       ).join('');
 
       body.innerHTML = `
-        <div style="font-family: Arial, sans-serif; color:#111; max-width:1200px; margin:0 auto; padding:20px;">
+        <div style="font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px;">
           <div style="text-align:center; border-bottom:3px solid #22c55e; padding-bottom:16px; margin-bottom:20px;">
             <div style="font-size:22px; font-weight:700; color:#111;">${farmName}</div>
             <div style="font-size:18px; font-weight:600; color:#333; margin-top:4px;">22-Week Mortality Sheet — Flock #${flockId}</div>
@@ -10636,18 +10638,17 @@ Current data will be REPLACED. Are you sure?`,
           </div>
 
           <!-- Mortality Table -->
-          <div style="overflow-x:auto;">
-          <table style="width:100%; border-collapse:collapse; font-size:12px; min-width:900px;">
+          <table style="width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed;">
             <thead>
               <tr style="background:#22c55e; color:#000;">
-                <th style="padding:10px 8px; border:1px solid #16a34a; text-align:center; min-width:80px;">Week</th>
+                <th style="padding:7px 4px; border:1px solid #16a34a; text-align:center; width:70px; font-size:10px;">Week</th>
                 ${dayHeadersHtml}
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Total<br>Deaths</th>
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Week<br>Mort %</th>
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Cum<br>Dead</th>
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Cum<br>Mort %</th>
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Birds<br>Remaining</th>
-                <th style="padding:10px 6px; border:1px solid #16a34a; text-align:center;">Livability<br>%</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Total<br>Deaths</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Wk<br>Mort%</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Cum<br>Dead</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Cum<br>Mort%</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Birds<br>Left</th>
+                <th style="padding:7px 2px; border:1px solid #16a34a; text-align:center; font-size:10px;">Live<br>%</th>
               </tr>
             </thead>
             <tbody>
@@ -10665,7 +10666,6 @@ Current data will be REPLACED. Are you sure?`,
               </tr>
             </tfoot>
           </table>
-          </div>
 
           <div style="margin-top:24px; padding-top:12px; border-top:1px solid #ddd; font-size:11px; color:#999; text-align:center;">
             FlockPro v2.1 · ${farmName} · Flock #${flockId} · ${now}
@@ -10675,6 +10675,7 @@ Current data will be REPLACED. Are you sure?`,
 
       overlay.classList.add('active');
       overlay.scrollTop = 0;
+      document.body.style.overflow = 'hidden';
     }
     // ===== END MORTALITY SHEET =====
 
