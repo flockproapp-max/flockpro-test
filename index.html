@@ -575,9 +575,9 @@
       top: 0; left: 0; right: 0; bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: auto;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior: none;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -3788,7 +3788,7 @@
 </head>
 <body>
   <!-- PRINT PREVIEW OVERLAY -->
-  <div id="printPreviewOverlay" ontouchstart="this._startY=event.touches[0].clientY" ontouchmove="(function(el,e){var st=el._startY-e.touches[0].clientY;if((st>0&&el.scrollHeight-el.scrollTop-el.clientHeight<1)||(st<0&&el.scrollTop<=0)){e.preventDefault();}el._startY=e.touches[0].clientY;})(this,event)">
+  <div id="printPreviewOverlay">
     <div id="printPreviewToolbar">
       <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
       <div class="toolbar-actions">
@@ -10508,21 +10508,12 @@ Current data will be REPLACED. Are you sure?`,
     function closePreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.remove('active');
-      document.removeEventListener('touchmove', preventBodyScroll);
-    }
-
-    function preventBodyScroll(e) {
-      const overlay = document.getElementById('printPreviewOverlay');
-      if (!overlay.contains(e.target)) {
-        e.preventDefault();
-      }
     }
 
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.add('active');
       overlay.scrollTop = 0;
-      document.addEventListener('touchmove', preventBodyScroll, { passive: false });
     }
 
     // ===== MORTALITY SHEET PRINT PREVIEW =====
