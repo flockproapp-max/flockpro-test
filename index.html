@@ -711,23 +711,76 @@
     #printPreviewBody .highlight-row { background: #f0fdf4; border: 1px solid #22c55e; border-radius: 6px; padding: 10px 14px; margin: 8px 0; }
     #printPreviewBody .highlight-row .hlabel { font-size: 10px; color: #666; text-transform: uppercase; }
     #printPreviewBody .highlight-row .hvalue { font-size: 16px; font-weight: 700; color: #16a34a; }
-    #printPreviewBody .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; text-align: center; }
+    #printPreviewBody .footer { margin-top: 32px; margin-bottom: 80px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; text-align: center; }
+
+    @page { size: portrait; margin: 0.4in; }
+    @page landscape-page { size: landscape; margin: 0.4in; }
 
     @media print {
+      /* Make the overlay act like a normal document when printing */
       #printPreviewOverlay {
         display: block !important;
         position: static !important;
+        width: 100% !important;
+        height: auto !important;
         overflow: visible !important;
         background: white !important;
       }
       #printPreviewToolbar { display: none !important; }
       #printPreviewBody {
+        display: block !important;
         box-shadow: none !important;
         margin: 0 !important;
-        padding: 20px !important;
+        padding: 10px !important;
+        padding-bottom: 0 !important;
         max-width: 100% !important;
+        width: 100% !important;
         border-radius: 0 !important;
+        overflow: visible !important;
       }
+      /* Page 2: Individual Flock Results prints landscape on its own page */
+      #printPreviewBody .landscape-section {
+        page-break-before: always !important;
+        break-before: page !important;
+        page: landscape-page !important;
+      }
+      /* Flock table fills landscape page */
+      #printPreviewBody .flock-table-scroll {
+        overflow: visible !important;
+        width: 100% !important;
+      }
+      #printPreviewBody .flock-table {
+        width: 100% !important;
+        font-size: 9px !important;
+        white-space: nowrap !important;
+      }
+      #printPreviewBody .flock-table th,
+      #printPreviewBody .flock-table td {
+        padding: 4px 6px !important;
+        white-space: nowrap !important;
+      }
+      /* Grids reflow naturally */
+      #printPreviewBody .stat-row,
+      #printPreviewBody .metric-row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        overflow: visible !important;
+      }
+      #printPreviewBody .stat-box,
+      #printPreviewBody .metric-box {
+        flex: 1 1 auto !important;
+        min-width: 80px !important;
+        page-break-inside: avoid !important;
+      }
+      /* Section headers stay with their content */
+      #printPreviewBody h2 {
+        page-break-after: avoid !important;
+      }
+      /* Table rows don't split across pages */
+      #printPreviewBody tr {
+        page-break-inside: avoid !important;
+      }
+      /* Hide everything else */
       body > *:not(#printPreviewOverlay) { display: none !important; }
     }
     /* ===== END PRINT PREVIEW ===== */
@@ -10872,6 +10925,7 @@ Current data will be REPLACED. Are you sure?`,
           ` : ''}
 
           ${flockRows ? `
+            <div class="landscape-section">
             <h2>🐔 Individual Flock Results</h2>
             <div class="flock-table-scroll">
             <table class="flock-table">
@@ -10883,6 +10937,7 @@ Current data will be REPLACED. Are you sure?`,
               </tr></thead>
               <tbody>${flockRows}</tbody>
             </table>
+            </div>
             </div>
           ` : ''}
 
