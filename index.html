@@ -582,7 +582,7 @@
       overflow-x: hidden;
       overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
-      touch-action: pan-y;
+      touch-action: pan-x pan-y pinch-zoom;
       box-sizing: border-box;
       width: 100%;
     }
@@ -650,6 +650,7 @@
       box-sizing: border-box;
       width: calc(100% - 16px);
       max-width: 100%;
+      overflow-x: hidden;
     }
     #printPreviewBody h1 { font-size: 22px; margin: 0 0 4px 0; color: #111; }
     #printPreviewBody h2 { font-size: 16px; margin: 20px 0 8px 0; border-bottom: 2px solid #22c55e; padding-bottom: 4px; color: #111; }
@@ -7758,20 +7759,20 @@
                 <label>🧪 Water Products &amp; Meds</label>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                   <div>
-                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Water Products Used</div>
+                    <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Water Products</div>
                     <input type="text" name="waterProducts" maxlength="300" placeholder="e.g. 3 gals of Cid 2000"
-                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px;">
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px; height:44px;">
                     <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Cost ($)</div>
                     <input type="number" name="waterProductsCost" min="0" step="0.01" placeholder="0.00" inputmode="decimal"
-                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box;">
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; height:44px;">
                   </div>
                   <div>
                     <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Meds Used</div>
                     <input type="text" name="medsUsed" maxlength="300" placeholder="e.g. Tylosin 200mg"
-                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px;">
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; margin-bottom:6px; height:44px;">
                     <div style="font-size:0.75em; color:#888; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.05em;">Cost ($)</div>
                     <input type="number" name="medsCost" min="0" step="0.01" placeholder="0.00" inputmode="decimal"
-                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box;">
+                      style="width:100%; padding:10px; background:#1a1a1a; border:1px solid #2a2a2a; border-radius:8px; color:#fff; font-size:0.95em; box-sizing:border-box; height:44px;">
                   </div>
                 </div>
               </div>
@@ -7966,33 +7967,33 @@
           const dayCellsHtml = DAY_NAMES.map((name, i) => {
             const c = dayCells[i];
             const color = c.dayDeaths > 0 ? '#dc2626' : '#999';
-            return `<div style="text-align:center;flex:1;min-width:0;padding:8px 2px;border-right:1px solid #e5e5e5;">
-              <div style="font-size:11px;color:#555;font-weight:700;margin-bottom:2px;">${name}</div>
-              <div style="font-size:11px;color:#22c55e;font-weight:700;margin-bottom:4px;">${c.dayLabel}</div>
-              <div style="font-size:16px;color:${color};font-weight:${c.dayDeaths>0?'700':'400'};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            return `<div style="text-align:center;flex:1;min-width:0;padding:6px 1px;border-right:1px solid #e5e5e5;overflow:hidden;">
+              <div style="font-size:9px;color:#555;font-weight:700;margin-bottom:1px;">${name}</div>
+              <div style="font-size:9px;color:#22c55e;font-weight:700;margin-bottom:3px;">${c.dayLabel}</div>
+              <div style="font-size:clamp(10px,3vw,15px);color:${color};font-weight:${c.dayDeaths>0?'700':'400'};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
             </div>`;
           }).join('');
 
           weekCards += `
-            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="background:${weekDeaths>0?'#166534':'#22c55e'};padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="color:#fff;font-weight:700;font-size:18px;">Week ${w}</span>
-                <span style="color:#fff;font-weight:700;font-size:16px;">${weekRange}</span>
-                ${weekDeaths > 0 ? `<span style="background:#dc2626;color:#fff;padding:4px 12px;border-radius:10px;font-size:15px;font-weight:700;">${weekDeaths} dead</span>` : '<span style="color:rgba(255,255,255,0.9);font-size:14px;">No deaths</span>'}
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:12px;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06);width:100%;box-sizing:border-box;">
+              <div style="background:${weekDeaths>0?'#166534':'#22c55e'};padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:4px;overflow:hidden;">
+                <span style="color:#fff;font-weight:700;font-size:clamp(13px,4vw,18px);white-space:nowrap;">Week ${w}</span>
+                <span style="color:#fff;font-weight:700;font-size:clamp(11px,3vw,15px);white-space:nowrap;">${weekRange}</span>
+                ${weekDeaths > 0 ? `<span style="background:#dc2626;color:#fff;padding:2px 8px;border-radius:10px;font-size:clamp(11px,3vw,14px);font-weight:700;white-space:nowrap;">${weekDeaths} dead</span>` : '<span style="color:rgba(255,255,255,0.9);font-size:clamp(11px,3vw,13px);white-space:nowrap;">No deaths</span>'}
               </div>
-              <div style="display:flex;border-bottom:1px solid #e5e5e5;">${dayCellsHtml}</div>
-              <div style="display:grid;grid-template-columns:repeat(3,1fr);padding:12px 16px;gap:8px;background:#fafafa;">
+              <div style="display:flex;border-bottom:1px solid #e5e5e5;width:100%;">${dayCellsHtml}</div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);padding:8px;gap:4px;background:#fafafa;">
                 <div style="text-align:center;">
-                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Wk Mort%</div>
-                  <div style="font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#bbb'};margin-top:4px;">${weekMortPct}</div>
+                  <div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:600;">Wk Mort%</div>
+                  <div style="font-size:clamp(13px,4vw,18px);font-weight:700;color:${weekDeaths>0?'#dc2626':'#bbb'};margin-top:2px;">${weekMortPct}</div>
                 </div>
                 <div style="text-align:center;">
-                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Total Dead</div>
-                  <div style="font-size:18px;font-weight:700;color:${runningTotal>0?'#dc2626':'#bbb'};margin-top:4px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+                  <div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:600;">Total Dead</div>
+                  <div style="font-size:clamp(13px,4vw,18px);font-weight:700;color:${runningTotal>0?'#dc2626':'#bbb'};margin-top:2px;">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
                 </div>
                 <div style="text-align:center;">
-                  <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:600;">Livability</div>
-                  <div style="font-size:18px;font-weight:700;color:#16a34a;margin-top:4px;">${livability}</div>
+                  <div style="font-size:9px;color:#888;text-transform:uppercase;font-weight:600;">Livability</div>
+                  <div style="font-size:clamp(13px,4vw,18px);font-weight:700;color:#16a34a;margin-top:2px;">${livability}</div>
                 </div>
               </div>
             </div>`;
@@ -8023,22 +8024,22 @@
 
               ${noDateWarning}
 
-              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
-                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
-                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Birds Placed</div>
-                  <div style="font-size:34px;font-weight:700;color:${placed>0?'#111':'#dc2626'};margin-top:6px;">${placed > 0 ? placed.toLocaleString() : '⚠️ Not Set'}</div>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;">
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:10px;text-align:center;background:#f0fdf4;min-width:0;overflow:hidden;">
+                  <div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;white-space:nowrap;">Birds Placed</div>
+                  <div style="font-size:clamp(16px,5vw,28px);font-weight:700;color:${placed>0?'#111':'#dc2626'};margin-top:4px;word-break:break-all;">${placed > 0 ? placed.toLocaleString() : '⚠️ Not Set'}</div>
                 </div>
-                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fef2f2;">
-                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Total Dead</div>
-                  <div style="font-size:34px;font-weight:700;color:#dc2626;margin-top:6px;">${totalDead.toLocaleString()}</div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:10px;text-align:center;background:#fef2f2;min-width:0;overflow:hidden;">
+                  <div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;white-space:nowrap;">Total Dead</div>
+                  <div style="font-size:clamp(16px,5vw,28px);font-weight:700;color:#dc2626;margin-top:4px;word-break:break-all;">${totalDead.toLocaleString()}</div>
                 </div>
-                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#fffbeb;">
-                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Mortality %</div>
-                  <div style="font-size:34px;font-weight:700;color:#d97706;margin-top:6px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:10px;text-align:center;background:#fffbeb;min-width:0;overflow:hidden;">
+                  <div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;white-space:nowrap;">Mortality %</div>
+                  <div style="font-size:clamp(16px,5vw,28px);font-weight:700;color:#d97706;margin-top:4px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
                 </div>
-                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:16px;text-align:center;background:#f0fdf4;">
-                  <div style="font-size:14px;color:#666;text-transform:uppercase;font-weight:600;">Livability</div>
-                  <div style="font-size:34px;font-weight:700;color:#16a34a;margin-top:6px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
+                <div style="border:1px solid #e5e5e5;border-radius:8px;padding:10px;text-align:center;background:#f0fdf4;min-width:0;overflow:hidden;">
+                  <div style="font-size:11px;color:#666;text-transform:uppercase;font-weight:600;white-space:nowrap;">Livability</div>
+                  <div style="font-size:clamp(16px,5vw,28px);font-weight:700;color:#16a34a;margin-top:4px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
                 </div>
               </div>
 
@@ -11030,20 +11031,20 @@ Current data will be REPLACED. Are you sure?`,
 
       body.innerHTML = `
         <style>
-          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px; box-sizing:border-box; }
+          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:12px; box-sizing:border-box; overflow-x:hidden; }
           .mort-header { text-align:center; border-bottom:3px solid #22c55e; padding-bottom:14px; margin-bottom:16px; }
           .mort-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-bottom:16px; }
           .mort-stat-box { border:1px solid #ddd; border-radius:8px; padding:10px; text-align:center; box-sizing:border-box; min-width:0; }
           .mort-stat-label { font-size:10px; color:#666; text-transform:uppercase; letter-spacing:0.05em; }
           .mort-stat-val { font-size:clamp(14px,5vw,18px); font-weight:700; margin-top:4px; word-break:break-word; }
           /* Mobile: week cards */
-          .mort-week-card { background:#f9f9f9; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; overflow:hidden; }
-          .mort-week-header { background:#22c55e; color:#000; font-weight:700; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; }
-          .mort-week-days { display:grid; grid-template-columns:repeat(7,1fr); gap:0; border-bottom:1px solid #ddd; }
-          .mort-day-cell { text-align:center; padding:6px 2px; border-right:1px solid #eee; font-size:11px; }
+          .mort-week-card { background:#f9f9f9; border:1px solid #ddd; border-radius:8px; margin-bottom:10px; overflow:hidden; width:100%; box-sizing:border-box; }
+          .mort-week-header { background:#22c55e; color:#000; font-weight:700; padding:6px 8px; display:flex; justify-content:space-between; align-items:center; font-size:clamp(10px,3vw,13px); gap:4px; overflow:hidden; }
+          .mort-week-days { display:grid; grid-template-columns:repeat(7,1fr); gap:0; border-bottom:1px solid #ddd; width:100%; }
+          .mort-day-cell { text-align:center; padding:4px 1px; border-right:1px solid #eee; font-size:clamp(9px,2.5vw,11px); min-width:0; overflow:hidden; }
           .mort-day-cell:last-child { border-right:none; }
-          .mort-day-name { font-size:9px; color:#888; margin-bottom:2px; }
-          .mort-day-date { font-size:9px; color:#aaa; margin-bottom:2px; }
+          .mort-day-name { font-size:clamp(8px,2vw,9px); color:#888; margin-bottom:1px; }
+          .mort-day-date { font-size:clamp(8px,2vw,9px); color:#22c55e; font-weight:700; margin-bottom:2px; }
           .mort-week-totals { display:grid; grid-template-columns:repeat(3,1fr); padding:8px 12px; gap:8px; }
           .mort-week-total-item { text-align:center; }
           .mort-week-total-label { font-size:9px; color:#888; text-transform:uppercase; }
