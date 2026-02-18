@@ -577,7 +577,7 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: auto;
+      overflow-y: scroll; /* scroll not auto - consistent with #app for iOS/Android zoom+scroll */
       overflow-x: hidden;
       overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
@@ -642,6 +642,7 @@
       background: white;
       border-radius: 8px;
       padding: 16px;
+      padding-bottom: 80px; /* prevent content being flush at bottom when zoomed on mobile */
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
@@ -4135,34 +4136,6 @@
           }
         }, { passive: false });
 
-        // Fix: when zoomed on Android or iOS, the visual viewport pans
-        // independently of the DOM. This makes #app (the scroll container)
-        // stay anchored to the top-left of the layout viewport instead of
-        // following the user's zoomed view — so scrolling feels broken or stuck.
-        // The fix: reposition #app to always match the visual viewport's
-        // current offset and size while zoomed, then restore when zoom ends.
-        if (window.visualViewport) {
-          const syncAppToViewport = () => {
-            const app = document.getElementById('app');
-            if (!app) return;
-            const vv = window.visualViewport;
-            if (vv.scale > 1.01) {
-              app.style.position = 'fixed';
-              app.style.top    = vv.offsetTop  + 'px';
-              app.style.left   = vv.offsetLeft + 'px';
-              app.style.width  = vv.width      + 'px';
-              app.style.height = vv.height     + 'px';
-            } else {
-              app.style.position = 'absolute';
-              app.style.top    = '0';
-              app.style.left   = '0';
-              app.style.width  = '';
-              app.style.height = '';
-            }
-          };
-          window.visualViewport.addEventListener('scroll', syncAppToViewport);
-          window.visualViewport.addEventListener('resize', syncAppToViewport);
-        }
       }
 
       protectBackButton() {
