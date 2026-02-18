@@ -572,13 +572,13 @@
     #printPreviewOverlay {
       display: none;
       position: fixed;
-      inset: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
       overflow-y: scroll;
       -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-      touch-action: pan-y;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y pinch-zoom;
     }
     #printPreviewOverlay.active {
       display: block;
@@ -10509,12 +10509,10 @@ Current data will be REPLACED. Are you sure?`,
     function closePreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.remove('active');
-      document.body.style.overflow = '';
     }
 
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
-      document.body.style.overflow = 'hidden';
       overlay.classList.add('active');
       overlay.scrollTop = 0;
     }
