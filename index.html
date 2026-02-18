@@ -572,15 +572,16 @@
     #printPreviewOverlay {
       display: none;
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: none;
+      flex-direction: column;
     }
     #printPreviewOverlay.active {
-      display: block;
+      display: flex;
     }
     #printPreviewToolbar {
       position: sticky;
@@ -623,12 +624,11 @@
       color: #fff;
     }
     #printPreviewBody {
-      max-width: 900px;
-      margin: 30px auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
-      padding: 40px 48px;
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
