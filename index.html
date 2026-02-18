@@ -570,7 +570,7 @@
     /* ===== PRINT PREVIEW OVERLAY ===== */
     #printPreviewOverlay {
       display: none;
-      position: fixed;
+      position: absolute; /* absolute inside fixed body - same pattern as #app, prevents zoom-scroll getting stuck */
       top: 0;
       left: 0;
       right: 0;
@@ -578,7 +578,7 @@
       z-index: 99999;
       background: #f0f0f0;
       overflow-y: scroll;
-      overflow-x: auto; /* allow horizontal scroll when zoomed on mobile */
+      overflow-x: auto;
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
       touch-action: pan-x pan-y pinch-zoom;
@@ -714,7 +714,6 @@
     #printPreviewBody .footer { margin-top: 32px; margin-bottom: 80px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; text-align: center; }
 
     @page { size: portrait; margin: 0.4in; }
-    @page landscape-page { size: landscape; margin: 0.4in; }
 
     @media print {
       /* Make the overlay act like a normal document when printing */
@@ -738,13 +737,7 @@
         border-radius: 0 !important;
         overflow: visible !important;
       }
-      /* Page 2: Individual Flock Results prints landscape on its own page */
-      #printPreviewBody .landscape-section {
-        page-break-before: always !important;
-        break-before: page !important;
-        page: landscape-page !important;
-      }
-      /* Flock table fills landscape page */
+      /* Flock table fills full width */
       #printPreviewBody .flock-table-scroll {
         overflow: visible !important;
         width: 100% !important;
@@ -3867,7 +3860,7 @@
     <div id="printPreviewToolbar">
       <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
       <div class="toolbar-actions">
-        <button class="btn-print-now" onclick="setTimeout(function(){window.print();},100)">🖨️ Print Now</button>
+        <button class="btn-print-now" onclick="smartPrint()">🖨️ Print Now</button>
         <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close Preview</button>
       </div>
     </div>
@@ -10961,6 +10954,48 @@ Current data will be REPLACED. Are you sure?`,
       } // end buildPreview
     }
     // ===== END PRINT PREVIEW =====
+
+    function smartPrint() {
+      const landscapeSection = document.querySelector('#printPreviewBody .landscape-section');
+      
+      if (!landscapeSection) {
+        // No flock table - just print normally
+        window.print();
+        return;
+      }
+
+      // Step 1: Hide the landscape section and print page 1 portrait
+      landscapeSection.style.display = 'none';
+      window.print();
+      landscapeSection.style.display = '';
+
+      // Step 2: Open a new window with just the flock table, print it landscape
+      const tableHTML = landscapeSection.innerHTML;
+      const win = window.open('', '_blank');
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            @page { size: landscape; margin: 0.4in; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
+            h2 { font-size: 14px; border-bottom: 2px solid #22c55e; padding-bottom: 6px; margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; font-size: 9px; }
+            th { background: #f0f0f0; padding: 5px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; }
+            td { padding: 4px 6px; border: 1px solid #eee; white-space: nowrap; }
+            tr:nth-child(even) td { background: #fafafa; }
+            .profit { color: #16a34a; font-weight: 700; }
+            .loss { color: #dc2626; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          ${tableHTML}
+          <script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
+        </body>
+        </html>
+      `);
+      win.document.close();
+    }
 
     function closePreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
