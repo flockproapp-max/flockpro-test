@@ -569,7 +569,7 @@
     
     /* ===== PRINT PREVIEW OVERLAY ===== */
 
-    @page { size: landscape; margin: 0.25in; }
+    @page { size: landscape; margin: 0.2in; }
 
     @media print {
       /* Hide all UI chrome */
@@ -581,15 +581,22 @@
       /* Container fills full page */
       .container { padding: 0 !important; margin: 0 !important; max-width: none !important; width: 100% !important; }
       .modern-card { background: white !important; color: #111 !important; border: none !important;
-                     box-shadow: none !important; padding: 4px !important; margin: 0 !important; }
+                     box-shadow: none !important; padding: 2px !important; margin: 0 !important; }
 
-      /* Scale the whole mortality card up to fill the page */
-      .modern-card { zoom: 1.28; }
+      /* Undo mobile scroll wrapper — must be visible for print */
+      div[style*="overflow-x:auto"] {
+        overflow: visible !important;
+        width: 100% !important;
+      }
 
-      /* Table fills full width, tight line-height so 21 rows fit */
-      table.mort-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }
-      table.mort-table td, table.mort-table th { white-space: nowrap; line-height: 1.1 !important; }
-      table.mort-table td div { margin: 0 !important; padding: 0 !important; line-height: 1.1 !important; }
+      /* Table stretches to full landscape page width */
+      table.mort-table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; table-layout: auto !important; }
+      table.mort-table td, table.mort-table th { white-space: nowrap !important; line-height: 1.1 !important; font-size: 10px !important; padding: 2px 3px !important; }
+      table.mort-table td div { margin: 0 !important; padding: 0 !important; line-height: 1.1 !important; font-size: 10px !important; }
+
+      /* Stat boxes: single row on print */
+      div[style*="grid-template-columns:repeat(2"] { grid-template-columns: repeat(5,1fr) !important; }
+      div[style*="grid-column:span 2"] { grid-column: span 1 !important; }
 
       /* Print colors */
       * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
