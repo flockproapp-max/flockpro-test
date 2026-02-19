@@ -589,10 +589,12 @@
         width: 100% !important;
       }
 
-      /* Table stretches to full landscape page width */
-      table.mort-table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; table-layout: auto !important; }
-      table.mort-table td, table.mort-table th { white-space: nowrap !important; line-height: 1.1 !important; font-size: 10px !important; padding: 2px 3px !important; }
-      table.mort-table td div { margin: 0 !important; padding: 0 !important; line-height: 1.1 !important; font-size: 10px !important; }
+      /* Table stretches to fill the full landscape page */
+      table.mort-table { width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; table-layout: fixed !important; }
+      table.mort-table td, table.mort-table th { white-space: nowrap !important; line-height: 1.2 !important; font-size: 13px !important; padding: 3px 4px !important; }
+      table.mort-table td div { margin: 0 !important; padding: 0 !important; line-height: 1.2 !important; font-size: 13px !important; }
+      table.mort-table td div:first-child { font-size: 10px !important; }
+      table.mort-table td div:last-child { font-size: 15px !important; }
 
       /* Stat boxes: single row on print */
       div[style*="grid-template-columns:repeat(2"] { grid-template-columns: repeat(5,1fr) !important; }
