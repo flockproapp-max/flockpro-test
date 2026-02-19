@@ -728,11 +728,21 @@
       table { width: 100% !important; font-size: 9px !important; }
       th, td { padding: 4px 5px !important; white-space: nowrap !important; }
       h2 { page-break-after: avoid !important; font-size: 12px !important; }
-      tr { page-break-inside: avoid !important; }
       /* Hide old overlay */
       #printPreviewOverlay { display: none !important; }
     }
     /* ===== END PRINT PREVIEW ===== */
+
+    @media print {
+      @page { size: letter portrait; margin: 0.15in; }
+      body, #app, #root { overflow: visible !important; height: auto !important; position: static !important; }
+      .modern-card { page-break-inside: auto !important; overflow: visible !important; padding: 4px !important; }
+      .modern-card table { page-break-inside: auto !important; width: 100% !important; }
+      .modern-card table tr { page-break-inside: avoid !important; }
+      .modern-card table td { font-size: 5.5px !important; padding: 1px 2px !important; line-height: 1.1 !important; }
+      .modern-card table td > div { font-size: 5.5px !important; line-height: 1.1 !important; }
+      .btn { display: none !important; }
+    }
 
     /* ===== FLOCK TAB SWITCHER ===== */
     .flock-tabs {
@@ -3816,7 +3826,7 @@
     <div id="printPreviewToolbar">
       <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
       <div class="toolbar-actions">
-        <button class="btn-print-now" onclick="smartPrint()">🖨️ Print Now</button>
+        <button class="btn-print-now" onclick="printMortalitySheet()">🖨️ Print Now</button>
         <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close Preview</button>
       </div>
     </div>
@@ -11330,8 +11340,65 @@ Current data will be REPLACED. Are you sure?`,
     }
     // ===== END PRINT PREVIEW =====
 
+    function printMortalitySheet() {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) { showIOSPrintModal(); return; }
+      closePreviewOverlay();
+      app.openMortalityReport();
+      setTimeout(function() {
+        const nav = document.querySelector('.top-nav');
+        const backBtn = document.querySelector('.container .btn-secondary');
+        const printBtn = document.querySelector('.container .btn-primary');
+        if (nav) nav.style.display = 'none';
+        if (backBtn) backBtn.style.display = 'none';
+        if (printBtn) printBtn.style.display = 'none';
+        window.print();
+        if (nav) nav.style.display = '';
+        if (backBtn) backBtn.style.display = '';
+        if (printBtn) printBtn.style.display = '';
+      }, 1500);
+    }
+
+    function showIOSPrintModal() {
+      const existing = document.getElementById('iosPrintModal');
+      if (existing) existing.remove();
+      const modal = document.createElement('div');
+      modal.id = 'iosPrintModal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+      modal.innerHTML = `
+        <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Arial,sans-serif;">
+          <div style="font-size:44px;margin-bottom:12px;">🖨️</div>
+          <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">How to Print</div>
+          <div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.6;">To print from iPhone, use Safari's built-in print option:</div>
+          <div style="text-align:left;background:#111;border-radius:10px;padding:16px;margin-bottom:20px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">1</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Tap the <strong style="color:#fff;">Share</strong> button at the bottom of Safari</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">2</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Scroll down and tap <strong style="color:#fff;">Print</strong></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">3</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Select your printer and print</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('iosPrintModal').remove()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:10px;padding:14px 0;font-size:16px;width:100%;-webkit-appearance:none;cursor:pointer;">Got it</button>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+    }
+
     function smartPrint() {
-      // Print the report view directly - hide nav, print, restore
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isIOS) {
+        showIOSPrintModal();
+        return;
+      }
+
+      // Desktop / Android
       const nav = document.querySelector('.top-nav');
       const backBtn = document.querySelector('.container .btn-secondary');
       const printBtn = document.querySelector('.container .btn-primary');
@@ -11342,6 +11409,47 @@ Current data will be REPLACED. Are you sure?`,
       if (nav) nav.style.display = '';
       if (backBtn) backBtn.style.display = '';
       if (printBtn) printBtn.style.display = '';
+    }
+
+    function showIOSPrintModal() {
+      const existing = document.getElementById('iosPrintModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'iosPrintModal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+
+      modal.innerHTML = `
+        <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Arial,sans-serif;">
+          <div style="font-size:44px;margin-bottom:12px;">🖨️</div>
+          <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">How to Print</div>
+          <div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.6;">
+            To print from iPhone, use Safari's built-in print option:
+          </div>
+          <div style="text-align:left;background:#111;border-radius:10px;padding:16px;margin-bottom:20px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">1</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Tap the <strong style="color:#fff;">Share</strong> button at the bottom of Safari</div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">2</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Scroll down and tap <strong style="color:#fff;">Print</strong></div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">3</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">Select your printer and print</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('iosPrintModal').remove()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:10px;padding:14px 0;font-size:16px;width:100%;-webkit-appearance:none;cursor:pointer;">
+            Got it
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) modal.remove();
+      });
     }
 
     function closePreviewOverlay() {
@@ -11557,30 +11665,20 @@ Current data will be REPLACED. Are you sure?`,
     const app = new FlockProApp();
 
     // ===== ZOOM SCROLL FIX =====
-    // When user pinch-zooms on mobile, expand #app so content at
-    // top/bottom edges remains reachable by scrolling
     (function() {
       const appEl = document.getElementById('app');
       if (!appEl || !window.visualViewport) return;
-
       function onViewportChange() {
-        const vv = window.visualViewport;
-        const scale = vv.scale || 1;
+        const scale = window.visualViewport.scale || 1;
         if (scale <= 1) {
-          // Not zoomed - restore normal layout
-          appEl.style.top = '0';
-          appEl.style.bottom = '0';
-          appEl.style.height = '';
           appEl.style.paddingTop = '';
           appEl.style.paddingBottom = '';
         } else {
-          // Zoomed in - allow scrolling to top/bottom by adding padding
-          const extraPad = Math.round(vv.height * (scale - 1) * 0.5);
+          const extraPad = Math.round(window.visualViewport.height * (scale - 1) * 0.5);
           appEl.style.paddingTop = extraPad + 'px';
           appEl.style.paddingBottom = extraPad + 'px';
         }
       }
-
       window.visualViewport.addEventListener('resize', onViewportChange);
       window.visualViewport.addEventListener('scroll', onViewportChange);
     })();
