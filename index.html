@@ -11345,18 +11345,8 @@ Current data will be REPLACED. Are you sure?`,
       if (isIOS) { showMobilePrintModal(); return; }
       closePreviewOverlay();
       app.openMortalityReport();
-      setTimeout(function() {
-        const nav = document.querySelector('.top-nav');
-        const backBtn = document.querySelector('.container .btn-secondary');
-        const printBtn = document.querySelector('.container .btn-primary');
-        if (nav) nav.style.display = 'none';
-        if (backBtn) backBtn.style.display = 'none';
-        if (printBtn) printBtn.style.display = 'none';
-        window.print();
-        if (nav) nav.style.display = '';
-        if (backBtn) backBtn.style.display = '';
-        if (printBtn) printBtn.style.display = '';
-      }, 1500);
+      // CSS @media print hides nav/buttons — just call print after view loads
+      setTimeout(function() { window.print(); }, 1500);
     }
 
     function showMobilePrintModal() {
@@ -11406,19 +11396,8 @@ Current data will be REPLACED. Are you sure?`,
         showMobilePrintModal();
         return;
       }
-      // Desktop + Android — window.print() works fine
-      const nav = document.querySelector('.top-nav');
-      const backBtn = document.querySelector('.container .btn-secondary');
-      const printBtn = document.querySelector('.container .btn-primary');
-      if (nav) nav.style.display = 'none';
-      if (backBtn) backBtn.style.display = 'none';
-      if (printBtn) printBtn.style.display = 'none';
-      setTimeout(function() {
-        window.print();
-        if (nav) nav.style.display = '';
-        if (backBtn) backBtn.style.display = '';
-        if (printBtn) printBtn.style.display = '';
-      }, 300);
+      // Desktop + Android: CSS @media print already hides nav/buttons, no JS needed
+      window.print();
     }
 
     function closePreviewOverlay() {
