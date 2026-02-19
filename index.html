@@ -11341,8 +11341,8 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) { showMobilePrintModal(); return; }
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) { showMobilePrintModal(); return; }
       closePreviewOverlay();
       app.openMortalityReport();
       setTimeout(function() {
@@ -11401,12 +11401,12 @@ Current data will be REPLACED. Are you sure?`,
     function showIOSPrintModal() { showMobilePrintModal(); }
 
     function smartPrint() {
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      if (isMobile) {
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isIOS) {
         showMobilePrintModal();
         return;
       }
-      // Desktop
+      // Desktop + Android — window.print() works fine
       const nav = document.querySelector('.top-nav');
       const backBtn = document.querySelector('.container .btn-secondary');
       const printBtn = document.querySelector('.container .btn-primary');
