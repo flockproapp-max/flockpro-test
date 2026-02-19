@@ -568,51 +568,185 @@
     }
     
     /* ===== PRINT PREVIEW OVERLAY ===== */
+    #printPreviewOverlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 99999;
+      background: #f0f0f0;
+      overflow-y: scroll;
+      overflow-x: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pan-y pinch-zoom;
+      box-sizing: border-box;
+    }
+    #printPreviewOverlay.active {
+      display: block;
+    }
+    #printPreviewToolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100000;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      box-sizing: border-box;
+      width: 100%;
+    }
+    #printPreviewToolbar .toolbar-title {
+      color: #22c55e;
+      font-weight: 700;
+      font-size: 0.85em;
+      letter-spacing: 0.03em;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #printPreviewToolbar .toolbar-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    #printPreviewToolbar button {
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.85em;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #printPreviewToolbar button:hover { opacity: 0.85; }
+    #printPreviewToolbar .btn-print-now {
+      background: #22c55e;
+      color: #000;
+    }
+    #printPreviewToolbar .btn-close-preview {
+      background: #444;
+      color: #fff;
+    }
+    #printPreviewBody {
+      max-width: 900px;
+      margin: 8px auto;
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      padding-bottom: 120px; /* prevent content being flush at bottom when zoomed on mobile */
+      color: #111;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      box-sizing: border-box;
+      width: calc(100% - 16px);
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    #printPreviewBody h1 { font-size: 22px; margin: 0 0 4px 0; color: #111; }
+    #printPreviewBody h2 { font-size: 16px; margin: 20px 0 8px 0; border-bottom: 2px solid #22c55e; padding-bottom: 4px; color: #111; }
+    #printPreviewBody h3 { font-size: 14px; margin: 14px 0 6px 0; color: #333; }
+    #printPreviewBody .preview-header { text-align: center; border-bottom: 3px solid #22c55e; padding-bottom: 16px; margin-bottom: 24px; }
+    #printPreviewBody .preview-header .farm-name { font-size: 13px; color: #555; margin-top: 4px; }
+    #printPreviewBody .preview-header .report-date { font-size: 12px; color: #888; }
+    #printPreviewBody .big-profit {
+      text-align: center;
+      font-size: 42px;
+      font-weight: 900;
+      color: #16a34a;
+      margin: 16px 0 4px 0;
+    }
+    #printPreviewBody .big-profit.loss { color: #dc2626; }
+    #printPreviewBody .big-profit-label { text-align: center; font-size: 12px; color: #666; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 20px; }
+    #printPreviewBody .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 10px 0;
+    }
+    #printPreviewBody .stat-box {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    #printPreviewBody .stat-box .slabel { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.05em; }
+    #printPreviewBody .stat-box .svalue { font-size: 18px; font-weight: 700; color: #111; margin-top: 2px; }
+    #printPreviewBody .stat-box .svalue.pos { color: #16a34a; }
+    #printPreviewBody .stat-box .svalue.neg { color: #dc2626; }
+    #printPreviewBody .metric-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      gap: 8px;
+      margin: 8px 0;
+    }
+    #printPreviewBody .metric-box {
+      background: #f8f8f8;
+      border-radius: 6px;
+      padding: 8px 10px;
+      text-align: center;
+    }
+    #printPreviewBody .metric-box .mlabel { font-size: 10px; color: #666; text-transform: uppercase; }
+    #printPreviewBody .metric-box .mvalue { font-size: 15px; font-weight: 700; color: #111; }
+    #printPreviewBody .expense-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    #printPreviewBody .expense-table td { padding: 6px 8px; border-bottom: 1px solid #eee; font-size: 13px; }
+    #printPreviewBody .expense-table td:last-child { text-align: right; font-weight: 700; }
+    #printPreviewBody .flock-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+    #printPreviewBody .flock-table th { background: #f0f0f0; padding: 7px 8px; text-align: left; border: 1px solid #ddd; font-size: 11px; white-space: nowrap; }
+    #printPreviewBody .flock-table td { padding: 6px 8px; border: 1px solid #eee; white-space: nowrap; }
+    #printPreviewBody .flock-table tr:nth-child(even) td { background: #fafafa; }
+    #printPreviewBody .flock-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+    @media (max-width: 768px) {
+      #printPreviewBody .flock-table { font-size: 10px; }
+      #printPreviewBody .flock-table th, #printPreviewBody .flock-table td { padding: 5px 6px; }
+    }
+    #printPreviewBody .highlight-row { background: #f0fdf4; border: 1px solid #22c55e; border-radius: 6px; padding: 10px 14px; margin: 8px 0; }
+    #printPreviewBody .highlight-row .hlabel { font-size: 10px; color: #666; text-transform: uppercase; }
+    #printPreviewBody .highlight-row .hvalue { font-size: 16px; font-weight: 700; color: #16a34a; }
+    #printPreviewBody .footer { margin-top: 32px; margin-bottom: 80px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; text-align: center; }
 
-    @page { size: landscape; margin: 0.2in; }
+    @page { size: landscape; margin: 0.3in; }
 
     @media print {
-      /* Hide all UI chrome */
-      .top-nav, .btn, button { display: none !important; }
-      body { background: white !important; margin: 0 !important; padding: 0 !important; }
+      /* Print the report app view directly */
+      body { background: white !important; color: black !important; }
       #app { overflow: visible !important; height: auto !important; position: static !important; }
       #root { overflow: visible !important; }
-
-      /* Remove ALL width constraints */
-      .container, .modern-card, .mort-scroll {
-        padding: 0 !important; margin: 0 !important;
-        max-width: none !important; width: 100% !important;
-        overflow: visible !important;
-        box-shadow: none !important; border: none !important;
-      }
-
-      /* Scale entire mortality card to fill the landscape page */
-      .modern-card {
-        transform-origin: top left;
-        transform: scale(1.92);
-        width: 52% !important;
-      }
-
-      /* Table layout */
-      table.mort-table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        table-layout: fixed !important;
-      }
-      table.mort-table th, table.mort-table td {
-        line-height: 1.2 !important;
-        white-space: nowrap !important;
-        padding: 3px 2px !important;
-      }
-
-      /* Stat boxes single row */
-      .mort-stats { grid-template-columns: repeat(5,1fr) !important; }
-      .mort-stats > div { grid-column: span 1 !important; }
-
-      /* Print colors */
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .top-nav, .btn-secondary, .btn-primary { display: none !important; }
+      .modern-card { background: white !important; color: black !important; border: none !important; box-shadow: none !important; }
+      .container { padding: 0 !important; }
+      /* Flock table horizontal scroll becomes visible for print */
+      div[style*="overflow-x:auto"] { overflow: visible !important; }
+      table { width: 100% !important; }
+      th:not(.mort-table th), td:not(.mort-table td) { padding: 4px 5px !important; white-space: nowrap !important; }
+      h2 { page-break-after: avoid !important; font-size: 12px !important; }
+      /* Hide old overlay */
+      #printPreviewOverlay { display: none !important; }
+      /* Mortality table print sizing */
+      table.mort-table { font-size: 16px !important; width: 100% !important; }
+      table.mort-table th { font-size: 16px !important; padding: 8px 6px !important; }
+      table.mort-table td { font-size: 16px !important; padding: 8px 4px !important; line-height: 1.4 !important; white-space: normal !important; }
+      table.mort-table td div { font-size: 16px !important; line-height: 1.4 !important; }
     }
-    /* ===== END PRINT ===== */
+    /* ===== END PRINT PREVIEW ===== */
+
+    @media print {
+      @page { size: landscape; margin: 0.3in; }
+      body, #app, #root { overflow: visible !important; height: auto !important; position: static !important; }
+      .modern-card { page-break-inside: auto !important; overflow: visible !important; padding: 4px !important; }
+      .modern-card table { page-break-inside: auto !important; width: 100% !important; }
+      .modern-card table tr { page-break-inside: avoid !important; }
+      .modern-card table td { padding: 2px 4px !important; line-height: 1.3 !important; }
+      .btn { display: none !important; }
+    }
 
     /* ===== FLOCK TAB SWITCHER ===== */
     .flock-tabs {
@@ -663,7 +797,106 @@
     .log-delete-btn:hover { color: #ef4444; }
     /* ===== END FLOCK TABS ===== */
 
-
+    /* Print Styles */
+    @media print {
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        color: black !important;
+      }
+      
+      @page {
+        size: landscape;
+        margin: 0.3in 0.25in !important;
+      }
+      
+      .container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      
+      .modern-card,
+      .edit-card {
+        margin: 0 0 6px 0 !important;
+        padding: 6px !important;
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        background: white !important;
+        page-break-inside: avoid !important;
+      }
+      
+      h2, h3 {
+        font-size: 13px !important;
+        margin: 3px 0 !important;
+        padding: 0 !important;
+        color: black !important;
+      }
+      
+      label {
+        font-size: 8px !important;
+        margin-bottom: 1px !important;
+        color: black !important;
+      }
+      
+      input, select, textarea {
+        font-size: 9px !important;
+        padding: 3px !important;
+        margin-bottom: 3px !important;
+        height: auto !important;
+        background: white !important;
+        color: black !important;
+        border: 1px solid #999 !important;
+      }
+      
+      .grid-2 {
+        gap: 6px !important;
+      }
+      
+      .form-row {
+        margin-bottom: 4px !important;
+      }
+      
+      .btn-group,
+      .nav-btn,
+      button[type="submit"],
+      .undo-btn,
+      .mobile-menu-btn,
+      .del-btn,
+      .no-print,
+      nav {
+        display: none !important;
+      }
+      
+      .header {
+        padding: 6px 0 !important;
+        margin-bottom: 6px !important;
+        background: white !important;
+      }
+      
+      .header h1 {
+        font-size: 14px !important;
+        color: black !important;
+      }
+      
+      .stat-value {
+        font-size: 16px !important;
+        color: black !important;
+      }
+      
+      .stat-label {
+        font-size: 8px !important;
+        color: black !important;
+      }
+      
+      .stat-card {
+        padding: 6px !important;
+        margin-bottom: 6px !important;
+        background: white !important;
+        border: 1px solid #ccc !important;
+      }
+    }
     
     /* Light Mode */
     body.light-mode {
@@ -3078,7 +3311,38 @@
     }
     
     /* Print styles remain unchanged but add mobile print optimization */
-
+    @media print {
+      .top-nav,
+      .flock-selection-card,
+      .no-print,
+      .btn {
+        display: none !important;
+      }
+      
+      body {
+        background: white;
+        color: black;
+      }
+      
+      .modern-card,
+      .arduino-card,
+      .stat-card {
+        page-break-inside: avoid;
+        border: 1px solid #ddd !important;
+        background: white !important;
+      }
+      
+      /* Ensure everything is visible in print */
+      .container {
+        padding: 10px;
+        max-width: 100%;
+      }
+      
+      .metric-grid,
+      .stat-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+    }
     
     /* Auth */
     .auth-container {
@@ -3520,7 +3784,25 @@
     }
     
     /* Print Styles */
-
+    @media print {
+      .top-nav,
+      .flock-selection-card,
+      .no-print,
+      .btn {
+        display: none !important;
+      }
+      
+      body {
+        background: white;
+        color: black;
+      }
+      
+      .modern-card,
+      .arduino-card,
+      .stat-card {
+        page-break-inside: avoid;
+      }
+    }
     
     /* Global Select Dropdown Styling */
     select {
@@ -3543,8 +3825,18 @@
   </style>
 </head>
 <body>
-  <!-- MORTALITY PRINT AREA - hidden on screen, shown only when printing -->
-
+  <!-- PRINT PREVIEW OVERLAY -->
+  <div id="printPreviewOverlay">
+    <div id="printPreviewToolbar">
+      <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
+      <div class="toolbar-actions">
+        <button class="btn-print-now" onclick="printMortalitySheet()">🖨️ Print Now</button>
+        <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close Preview</button>
+      </div>
+    </div>
+    <div id="printPreviewBody"></div>
+  </div>
+  <!-- END PRINT PREVIEW -->
 
   <div id="app">
   <div id="root"></div>
@@ -7429,7 +7721,7 @@
           <div class="arduino-card" style="background:#111 !important; border-color:#2a2a2a !important; color:#fff !important;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h3 style="margin:0; color:#fff !important;">📅 Daily Log — Flock #${this.escapeHtml(String(this.currentFlock.id))}</h3>
-              <button onclick="app.openMortalityReport()" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
+              <button onclick="showMortalitySheet()" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
             </div>
 
             <!-- Bird Stats Bar -->
@@ -9112,20 +9404,20 @@
           const dayCols = dayCells.map(c => {
             const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
             const weight = c.dayDeaths > 0 ? '700' : '400';
-            return `<td style="text-align:center;padding:4px 3px;border:1px solid #eee;min-width:48px;">
-              <div style="font-size:11px;color:#aaa;white-space:nowrap;">${c.dayLabel}</div>
-              <div style="font-size:18px;color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            return `<td style="text-align:center;padding:4px 2px;border:1px solid #eee;">
+              <div style="font-size:11px;color:#aaa;">${c.dayLabel}</div>
+              <div style="font-size:20px;color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
             </td>`;
           }).join('');
 
           tableRows += `<tr style="background:${rowBg};">
-            <td style="padding:4px 8px;border:1px solid #ddd;white-space:nowrap;font-weight:700;font-size:14px;background:#22c55e;color:#000;min-width:110px;">
+            <td style="padding:3px 6px;border:1px solid #ddd;white-space:nowrap;font-weight:700;font-size:14px;background:#22c55e;color:#000;width:130px;">
               Wk ${w} <span style="font-size:11px;font-weight:400;color:#1a5c30;">${weekRange}</span>
             </td>
             ${dayCols}
-            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};min-width:52px;">${weekDeaths > 0 ? weekDeaths : '—'}</td>
-            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:14px;color:#666;min-width:48px;">${weekMortPct}</td>
-            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:14px;color:#16a34a;min-width:56px;">${livability}</td>
+            <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};width:50px;">${weekDeaths > 0 ? weekDeaths : '—'}</td>
+            <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:16px;color:#666;width:45px;">${weekMortPct}</td>
+            <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:16px;color:#16a34a;width:55px;">${livability}</td>
           </tr>`;
         }
 
@@ -9134,74 +9426,69 @@
         const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
 
         return `
-          <div class="container" style="padding:8px;">
-            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;padding:12px;overflow:hidden;">
-
-              <!-- Buttons -->
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
+          <div class="container">
+            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
                 <button onclick="app.navigate('flock')" class="btn btn-secondary">← Back</button>
                 <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
               </div>
 
-              <!-- Header -->
-              <div style="border-bottom:3px solid #22c55e;padding-bottom:8px;margin-bottom:12px;">
-                <div style="font-size:18px;font-weight:700;">${this.escapeHtml(farmName)}</div>
-                <div style="font-size:13px;font-weight:600;color:#333;">21-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
-                <div style="font-size:11px;color:#888;margin-bottom:10px;">Generated: ${now}</div>
-                <!-- Stat boxes: 2 cols on mobile, 5 on desktop -->
-                <div class="mort-stats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
-                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Birds Placed</div>
-                    <div style="font-size:16px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #22c55e;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div>
+                  <div style="font-size:16px;font-weight:700;">${this.escapeHtml(farmName)}</div>
+                  <div style="font-size:12px;font-weight:600;color:#333;">21-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
+                  <div style="font-size:10px;color:#888;">Generated: ${now}</div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#f0fdf4;">
+                    <div style="font-size:9px;color:#666;text-transform:uppercase;">Birds Placed</div>
+                    <div style="font-size:14px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fef2f2;">
-                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Total Dead</div>
-                    <div style="font-size:16px;font-weight:700;color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#fef2f2;">
+                    <div style="font-size:9px;color:#666;text-transform:uppercase;">Total Dead</div>
+                    <div style="font-size:14px;font-weight:700;color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
-                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Birds Left</div>
-                    <div style="font-size:16px;font-weight:700;color:#16a34a;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#f0fdf4;">
+                    <div style="font-size:9px;color:#666;text-transform:uppercase;">Birds Left</div>
+                    <div style="font-size:14px;font-weight:700;color:#16a34a;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fffbeb;">
-                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Mortality %</div>
-                    <div style="font-size:16px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#fffbeb;">
+                    <div style="font-size:9px;color:#666;text-transform:uppercase;">Mortality %</div>
+                    <div style="font-size:14px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;grid-column:span 2;">
-                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Livability</div>
-                    <div style="font-size:16px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#f0fdf4;">
+                    <div style="font-size:9px;color:#666;text-transform:uppercase;">Livability</div>
+                    <div style="font-size:14px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Scrollable table wrapper -->
-              <div class="mort-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;">
-                <table class="mort-table" style="min-width:700px;width:100%;border-collapse:collapse;font-size:13px;">
-                  <thead>
-                    <tr style="background:#111;color:#fff;">
-                      <th style="padding:6px 8px;border:1px solid #333;text-align:left;font-size:12px;white-space:nowrap;">Week</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Sun</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Mon</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Tue</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Wed</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Thu</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Fri</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Sat</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Wk Dead</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Mort%</th>
-                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Livability</th>
-                    </tr>
-                  </thead>
-                  <tbody>${tableRows}</tbody>
-                  <tfoot>
-                    <tr style="background:#111;color:#fff;font-weight:700;">
-                      <td colspan="8" style="padding:5px 8px;border:1px solid #333;text-align:right;font-size:11px;">TOTALS</td>
-                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#ef4444;font-size:13px;">${totalDeadFromLogs}</td>
-                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#ef4444;font-size:13px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</td>
-                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#22c55e;font-size:13px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+              <table style="width:100%;border-collapse:collapse;font-size:18px;">
+                <thead>
+                  <tr style="background:#111;color:#fff;">
+                    <th style="padding:6px;border:1px solid #333;text-align:left;font-size:18px;">Week</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Sun</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Mon</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Tue</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Wed</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Thu</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Fri</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Sat</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:50px;">Wk Dead</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:45px;">Mort%</th>
+                    <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:55px;">Livability</th>
+                  </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+                <tfoot>
+                  <tr style="background:#111;color:#fff;font-weight:700;">
+                    <td colspan="8" style="padding:4px 6px;border:1px solid #333;text-align:right;font-size:12px;">TOTALS</td>
+                    <td style="padding:4px;border:1px solid #333;text-align:center;color:#ef4444;font-size:14px;">${totalDeadFromLogs}</td>
+                    <td style="padding:4px;border:1px solid #333;text-align:center;color:#ef4444;font-size:14px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</td>
+                    <td style="padding:4px;border:1px solid #333;text-align:center;color:#22c55e;font-size:14px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
+                  </tr>
+                </tfoot>
+              </table>
 
               <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
                 FlockPro v${this.appVersion} · ${this.escapeHtml(farmName)} · Flock #${this.escapeHtml(String(flockId))} · ${now}
@@ -10797,157 +11084,478 @@ Current data will be REPLACED. Are you sure?`,
       }
     }
 
+    // ===== PRINT PREVIEW FUNCTION =====
+    function showPrintPreview() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      const body = document.getElementById('printPreviewBody');
 
-    function smartPrint() { printMortalitySheet(); }
+      // Show loading state immediately
+      body.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Loading report...</p>';
+      openPreviewOverlay();
+
+      // Load daily logs first if on flock view, then build preview
+      const needsLogs = app && app.currentView === 'flock' && app.currentFlock;
+      const loader = needsLogs ? app.loadDailyLogs() : Promise.resolve();
+      loader.then(() => buildPreview()).catch(() => buildPreview());
+
+      function buildPreview() {
+      const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Try to pull data from the current page's rendered summary/flock view
+      let content = '';
+
+      // Helper: get text from an element
+      const txt = (sel, fallback = '') => {
+        const el = document.querySelector(sel);
+        return el ? el.innerText.trim() : fallback;
+      };
+
+      // Farm name from header or settings
+      const farmName = app && app.settings && app.settings.farmName ? app.settings.farmName : 'Farm Report';
+
+      // Detect which page we're on
+      const isSummary = app && app.currentView === 'summary';
+      const isFlock = app && app.currentView === 'flock' && app.currentFlock;
+
+      if (isFlock) {
+        // === SINGLE FLOCK REPORT ===
+        const f = app.currentFlock;
+        const m = app.calculateMetrics(f);
+        const profitClass = m.totalProfit >= 0 ? 'pos' : 'neg';
+        const fmt = (v) => app.fmt(v);
+
+        let expenseRows = '';
+        const expFields = [
+          ['showFeed','feedLabel','fCost'], ['showPoult','poultLabel','pCost'],
+          ['showMeds','medsLabel','meds'], ['showClean','cleanLabel','clean'],
+          ['showPest','pestLabel','pest'], ['showWater','waterLabel','water'],
+          ['showEquip','equipLabel','equip'], ['showRepairs','repairsLabel','repairs'],
+          ['showElectric','electricLabel','electric'], ['showGas','gasLabel','gas'],
+          ['showCoal','coalLabel','coal'], ['showLoading','loadingLabel','loading'],
+          ['showShavings','shavingsLabel','shavings'], ['showLabor','laborLabel','labor'],
+          ['showDep','depLabel','depreciation'], ['showFuel','fuelLabel','fuel'],
+          ['showMisc1','misc1Label','misc1'], ['showMisc2','misc2Label','misc2'],
+          ['showMisc3','misc3Label','misc3'], ['showMisc4','misc4Label','misc4']
+        ];
+        expFields.forEach(([showKey, labelKey, dataKey]) => {
+          const val = parseFloat(f[dataKey]) || 0;
+          if (app.settings[showKey] && val > 0) {
+            expenseRows += `<tr><td>${app.settings[labelKey] || dataKey}</td><td>${fmt(val)}</td></tr>`;
+          }
+        });
+
+        content = `
+          <div class="preview-header">
+            <h1>FlockPro — Flock Report</h1>
+            <div class="farm-name">${farmName}</div>
+            <div class="report-date">Generated: ${now}</div>
+          </div>
+
+          <div class="big-profit ${profitClass}">${fmt(m.totalProfit)}</div>
+          <div class="big-profit-label">Total Profit</div>
+
+          <h2>📊 Financial Summary</h2>
+          <div class="stat-row">
+            <div class="stat-box"><div class="slabel">Revenue</div><div class="svalue pos">${fmt(f.revenue || 0)}</div></div>
+            <div class="stat-box"><div class="slabel">Total Expenses</div><div class="svalue neg">${fmt(m.totalExp)}</div></div>
+            <div class="stat-box"><div class="slabel">Net Profit</div><div class="svalue ${profitClass}">${fmt(m.totalProfit)}</div></div>
+          </div>
+
+          <h2>🐔 Flock Details</h2>
+          <div class="stat-row">
+            <div class="stat-box"><div class="slabel">Flock #</div><div class="svalue">${app.escapeHtml(String(f.id || ''))}</div></div>
+            <div class="stat-box"><div class="slabel">Barn</div><div class="svalue">${app.escapeHtml(f.barn || '—')}</div></div>
+            <div class="stat-box"><div class="slabel">Placed</div><div class="svalue">${(f.placed || 0).toLocaleString()}</div></div>
+            <div class="stat-box"><div class="slabel">Shipped</div><div class="svalue">${(f.shipped || 0).toLocaleString()}</div></div>
+          </div>
+          <div class="stat-row" style="margin-top:8px;">
+            <div class="stat-box"><div class="slabel">Started</div><div class="svalue" style="font-size:14px;">${f.startedDate || '—'}</div></div>
+            <div class="stat-box"><div class="slabel">Shipped Date</div><div class="svalue" style="font-size:14px;">${f.shippedDate || '—'}</div></div>
+            <div class="stat-box"><div class="slabel">Breed</div><div class="svalue" style="font-size:14px;">${app.escapeHtml(f.poultSupplier || '—')}</div></div>
+            <div class="stat-box"><div class="slabel">Hatchery</div><div class="svalue" style="font-size:14px;">${app.escapeHtml(f.hatchery || '—')}</div></div>
+            <div class="stat-box"><div class="slabel">Barn Sq Ft</div><div class="svalue" style="font-size:14px;">${f.barnSqFt ? parseFloat(f.barnSqFt).toLocaleString() : '—'}</div></div>
+            <div class="stat-box"><div class="slabel">Feed Used (lbs)</div><div class="svalue" style="font-size:14px;">${f.feedLbs ? parseFloat(f.feedLbs).toLocaleString() : '—'}</div></div>
+          </div>
+
+          <h2>📈 Performance Metrics</h2>
+          <div class="metric-row">
+            <div class="metric-box"><div class="mlabel">ADG</div><div class="mvalue">${m.adg ? m.adg.toFixed(4) : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Age</div><div class="mvalue">${m.ageDays ? Math.round(m.ageDays) + ' days' : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">FCR</div><div class="mvalue">${m.fcr ? m.fcr.toFixed(3) : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Livability</div><div class="mvalue">${m.livability ? m.livability.toFixed(1) + '%' : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Avg Weight</div><div class="mvalue">${f.weight ? parseFloat(f.weight).toFixed(2) + ' lbs' : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Profit/Bird</div><div class="mvalue">${m.profitPerBird != null ? '$' + m.profitPerBird.toFixed(2) : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Profit/Sq Ft</div><div class="mvalue">${m.profitPerSqFt != null ? '$' + m.profitPerSqFt.toFixed(2) : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Sq Ft/Bird</div><div class="mvalue">${m.sqFtPerBird ? m.sqFtPerBird.toFixed(2) : '—'}</div></div>
+            <div class="metric-box"><div class="mlabel">Paid/lb</div><div class="mvalue">${f.pricePerLb ? '$' + parseFloat(f.pricePerLb).toFixed(4) : '—'}</div></div>
+          </div>
+
+          ${expenseRows ? `
+            <h2>💰 Expense Breakdown</h2>
+            <table class="expense-table">
+              <tbody>${expenseRows}</tbody>
+            </table>
+          ` : ''}
+
+          <div class="footer">FlockPro v${app.appVersion} • ${farmName} • ${now}</div>
+        `;
+
+      } else if (isSummary) {
+        // === SUMMARY REPORT ===
+        const selectedFlocks = app.flocks.filter(f => app.selectedFlockIds.includes(f.docId));
+        if (selectedFlocks.length === 0) {
+          content = `
+            <div class="preview-header">
+              <h1>FlockPro — Summary Report</h1>
+              <div class="farm-name">${farmName}</div>
+              <div class="report-date">Generated: ${now}</div>
+            </div>
+            <p style="text-align:center;color:#888;margin-top:40px;">No flocks selected. Please select flocks on the Summary page first, then click Print Preview.</p>
+          `;
+        } else {
+        const s = app.calculateSummary(selectedFlocks);
+        const fmt = (v) => app.fmt(v);
+        const profitClass = s.profit >= 0 ? 'pos' : 'neg';
+        const stats = app.getPerformanceStats ? app.getPerformanceStats() : null;
+
+        let expenseRows = '';
+        const expFields = [
+          ['showFeed','feedLabel','totalFeedCost'], ['showPoult','poultLabel','totalPoultCost'],
+          ['showMeds','medsLabel','totalMeds'], ['showClean','cleanLabel','totalClean'],
+          ['showPest','pestLabel','totalPest'], ['showWater','waterLabel','totalWater'],
+          ['showEquip','equipLabel','totalEquip'], ['showRepairs','repairsLabel','totalRepairs'],
+          ['showElectric','electricLabel','totalElectric'], ['showGas','gasLabel','totalGas'],
+          ['showCoal','coalLabel','totalCoal'], ['showLoading','loadingLabel','totalLoading'],
+          ['showShavings','shavingsLabel','totalShavings'], ['showLabor','laborLabel','totalLabor'],
+          ['showDep','depLabel','totalDep'], ['showFuel','fuelLabel','totalFuel']
+        ];
+        expFields.forEach(([showKey, labelKey, dataKey]) => {
+          const val = parseFloat(s[dataKey]) || 0;
+          if (app.settings[showKey] && val > 0) {
+            expenseRows += `<tr><td>${app.settings[labelKey]}</td><td>${fmt(val)}</td></tr>`;
+          }
+        });
+
+        // Individual flock rows
+        let flockRows = selectedFlocks.map(f => {
+          const m = app.calculateMetrics(f);
+          return `<tr>
+            <td>${app.escapeHtml(String(f.id || ''))}</td>
+            <td>${app.escapeHtml(f.barn || '—')}</td>
+            <td>${m.adg ? m.adg.toFixed(4) : '—'}</td>
+            <td>${m.fcr ? m.fcr.toFixed(3) : '—'}</td>
+            <td>${m.livability ? m.livability.toFixed(1) + '%' : '—'}</td>
+            <td>${m.ageDays ? Math.round(m.ageDays) + 'd' : '—'}</td>
+            <td>${f.weight ? parseFloat(f.weight).toFixed(2) + ' lbs' : '—'}</td>
+            <td>${m.profitPerBird != null ? '$' + m.profitPerBird.toFixed(2) : '—'}</td>
+            <td>${m.profitPerSqFt != null ? '$' + m.profitPerSqFt.toFixed(2) : '—'}</td>
+            <td>${m.sqFtPerBird ? m.sqFtPerBird.toFixed(2) : '—'}</td>
+            <td>${f.pricePerLb ? '$' + parseFloat(f.pricePerLb).toFixed(4) : '—'}</td>
+            <td style="color:${m.totalProfit >= 0 ? '#16a34a' : '#dc2626'}; font-weight:700;">${fmt(m.totalProfit)}</td>
+          </tr>`;
+        }).join('');
+
+        content = `
+          <div class="preview-header">
+            <h1>FlockPro — Summary Report</h1>
+            <div class="farm-name">${farmName}</div>
+            <div class="report-date">Generated: ${now} &nbsp;|&nbsp; ${s.flockCount} Flock${s.flockCount !== 1 ? 's' : ''} Selected</div>
+          </div>
+
+          <div class="big-profit ${profitClass}">${fmt(s.profit)}</div>
+          <div class="big-profit-label">Total Profit</div>
+
+          <h2>📊 Financial Overview</h2>
+          <div class="stat-row">
+            <div class="stat-box"><div class="slabel">Total Placed</div><div class="svalue">${s.placed.toLocaleString()}</div></div>
+            <div class="stat-box"><div class="slabel">Total Shipped</div><div class="svalue">${s.shipped.toLocaleString()}</div></div>
+            <div class="stat-box"><div class="slabel">Total Revenue</div><div class="svalue pos">${fmt(s.revenue)}</div></div>
+            <div class="stat-box"><div class="slabel">Total Expenses</div><div class="svalue neg">${fmt(s.expenses)}</div></div>
+            <div class="stat-box"><div class="slabel">Net Profit</div><div class="svalue ${profitClass}">${fmt(s.profit)}</div></div>
+          </div>
+
+          ${stats ? `
+            <h2>🏆 Performance Highlights</h2>
+            <div class="stat-row">
+              <div class="stat-box" style="border-color:#22c55e;">
+                <div class="slabel">Best Flock</div>
+                <div class="svalue pos">Flock #${stats.best.id}</div>
+                <div style="font-size:12px;color:#555;">${fmt(stats.best.profit)} profit</div>
+              </div>
+              <div class="stat-box" style="border-color:#ef4444;">
+                <div class="slabel">Weakest Flock</div>
+                <div class="svalue neg">Flock #${stats.worst.id}</div>
+                <div style="font-size:12px;color:#555;">${fmt(stats.worst.profit)} profit</div>
+              </div>
+              <div class="stat-box" style="border-color:#f59e0b;">
+                <div class="slabel">Avg Profit/Flock</div>
+                <div class="svalue">${fmt(stats.average)}</div>
+              </div>
+            </div>
+          ` : ''}
+
+          <h2>📈 Group Performance Metrics</h2>
+          <div class="metric-row">
+            <div class="metric-box"><div class="mlabel">ADG</div><div class="mvalue">${s.adg.toFixed(4)}</div></div>
+            <div class="metric-box"><div class="mlabel">FCR</div><div class="mvalue">${s.fcr.toFixed(3)}</div></div>
+            <div class="metric-box"><div class="mlabel">Livability</div><div class="mvalue">${s.livability.toFixed(1)}%</div></div>
+            <div class="metric-box"><div class="mlabel">Avg Age</div><div class="mvalue">${s.avgAge.toFixed(0)} days</div></div>
+            <div class="metric-box"><div class="mlabel">Avg Weight</div><div class="mvalue">${s.avgWeight.toFixed(2)} lbs</div></div>
+            <div class="metric-box"><div class="mlabel">Profit/Bird</div><div class="mvalue">$${s.profitPerBird.toFixed(2)}</div></div>
+            <div class="metric-box"><div class="mlabel">Profit/Sq Ft</div><div class="mvalue">$${s.profitPerSqFt.toFixed(2)}</div></div>
+            <div class="metric-box"><div class="mlabel">Sq Ft/Bird</div><div class="mvalue">${s.sqFtPerBird.toFixed(2)}</div></div>
+            <div class="metric-box"><div class="mlabel">Paid/lb</div><div class="mvalue">$${s.avgPricePerLb.toFixed(3)}</div></div>
+          </div>
+
+          ${expenseRows ? `
+            <h2>💰 Expense Breakdown</h2>
+            <table class="expense-table">
+              <tbody>${expenseRows}</tbody>
+            </table>
+          ` : ''}
+
+          ${flockRows ? `
+            <div class="landscape-section">
+            <h2>🐔 Individual Flock Results</h2>
+            <div class="flock-table-scroll">
+            <table class="flock-table">
+              <thead><tr>
+                <th>Flock #</th><th>Barn</th>
+                <th>ADG</th><th>FCR</th><th>Livability</th><th>Age</th><th>Avg Wt</th>
+                <th>Profit/Bird</th><th>Profit/Sq Ft</th><th>Sq Ft/Bird</th><th>Paid/lb</th>
+                <th>Profit</th>
+              </tr></thead>
+              <tbody>${flockRows}</tbody>
+            </table>
+            </div>
+            </div>
+          ` : ''}
+
+          <div class="footer">FlockPro v${app.appVersion} • ${farmName} • ${now}</div>
+        `;
+        } // end else (selectedFlocks.length > 0)
+
+      } else {
+        content = `
+          <div class="preview-header">
+            <h1>FlockPro Report</h1>
+            <div class="farm-name">${farmName}</div>
+            <div class="report-date">Generated: ${now}</div>
+          </div>
+          <p style="text-align:center;color:#888;margin-top:40px;">No report data available. Please open a flock or generate a summary report first, then click Print Preview.</p>
+        `;
+      }
+
+      body.innerHTML = content;
+      openPreviewOverlay();
+      } // end buildPreview
+    }
+    // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      if (!app || !app.currentFlock) { window.print(); return; }
+      closePreviewOverlay();
+      app.openMortalityReport();
+      setTimeout(function() { window.print(); }, 1500);
+    }
+
+    function smartPrint() {
+      window.print();
+    }
+
+        function closePreviewOverlay() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      overlay.classList.remove('active');
+    }
+
+    function openPreviewOverlay() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      overlay.classList.add('active');
+      overlay.scrollTop = 0;
+      // Add a spacer at the bottom of the body so zoom-scroll never gets stuck
+      // at the last element. Removed and re-added each time to stay current.
+      const body = document.getElementById('printPreviewBody');
+      const existing = body.querySelector('.print-scroll-spacer');
+      if (existing) existing.remove();
+      const spacer = document.createElement('div');
+      spacer.className = 'print-scroll-spacer';
+      spacer.style.cssText = 'height:200px;width:100%;display:block;';
+      body.appendChild(spacer);
+    }
+
+    // ===== MORTALITY SHEET PRINT PREVIEW =====
+    function showMortalitySheet() {
+      const overlay = document.getElementById('printPreviewOverlay');
+      const body = document.getElementById('printPreviewBody');
+      if (!app || !app.currentFlock) return;
+
+      // Show loading state immediately
+      body.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Loading data...</p>';
+      openPreviewOverlay();
+
+      // Load logs first, then render
+      app.loadDailyLogs().then(() => {
+        buildMortalityOverlay();
+      }).catch(() => {
+        buildMortalityOverlay(); // render with whatever data we have
+      });
+
+      function buildMortalityOverlay() {
 
       const flock = app.currentFlock;
       const logs = app.dailyLogs || [];
       const farmName = (app.settings && app.settings.farmName) ? app.settings.farmName : 'Farm';
       const flockId = flock.id || '—';
-      const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,'')) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,'')) || 0;
+      const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,"")) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,"")) || parseFloat(String(flock.numBirds||0).replace(/[,$]/g,"")) || 0;
       const placedDate = flock.placedDate || flock.startDate || flock.startedDate || null;
       const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
 
       const deathsByDate = {};
-      logs.forEach(l => { if (l.date) deathsByDate[l.date] = (deathsByDate[l.date]||0) + (l.deaths||0); });
+      logs.forEach(l => {
+        if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0);
+      });
 
+      const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const WEEKS = 21;
-      let runningTotal = 0;
       const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
       const fmtD = d => String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
       const toYMD = d => d.toISOString().split('T')[0];
 
+      let runningTotal = 0;
       let tableRows = '';
+
       for (let w = 1; w <= WEEKS; w++) {
         const dayCells = [];
-        let weekDeaths = 0, weekStartDate = null, weekEndDate = null;
+        let weekDeaths = 0;
+        let weekStartDate = null;
+        let weekEndDate = null;
+
         for (let d = 0; d < 7; d++) {
-          const dayIndex = (w-1)*7+d;
-          let dayDeaths = 0, dayLabel = '';
+          const dayIndex = (w - 1) * 7 + d;
+          let dayDeaths = 0;
+          let dayLabel = '';
           if (base) {
             const dayDate = new Date(base);
             dayDate.setDate(base.getDate() + dayIndex);
             const ymd = toYMD(dayDate);
             dayDeaths = deathsByDate[ymd] || 0;
             dayLabel = fmtD(dayDate);
-            if (d===0) weekStartDate = dayDate;
-            if (d===6) weekEndDate = dayDate;
-          } else { dayLabel = 'D'+(dayIndex+1); }
+            if (d === 0) weekStartDate = dayDate;
+            if (d === 6) weekEndDate = dayDate;
+          } else {
+            dayLabel = 'D' + (dayIndex + 1);
+          }
           weekDeaths += dayDeaths;
           dayCells.push({ dayDeaths, dayLabel });
         }
+
         runningTotal += weekDeaths;
-        const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths/placed)*100).toFixed(2)+'%' : '—';
-        const livability = placed > 0 ? (((placed-runningTotal)/placed)*100).toFixed(2)+'%' : '—';
-        const weekRange = base && weekStartDate && weekEndDate ? (fmtD(weekStartDate)+'–'+fmtD(weekEndDate)) : ('D'+((w-1)*7+1)+'–D'+(w*7));
+        const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths / placed) * 100).toFixed(2) + '%' : '—';
+        const livability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) + '%' : '—';
+        const weekRange = base && weekStartDate && weekEndDate ? (fmtD(weekStartDate) + '–' + fmtD(weekEndDate)) : ('D' + ((w-1)*7+1) + '–D' + (w*7));
         const rowBg = w % 2 === 0 ? '#f9f9f9' : '#fff';
 
         const dayCols = dayCells.map(c => {
           const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
           const weight = c.dayDeaths > 0 ? '700' : '400';
-          return `<td><div class="dlabel">${c.dayLabel}</div><div class="dval" style="color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div></td>`;
+          return `<td style="text-align:center;padding:3px 2px;border:1px solid #eee;">
+            <div style="font-size:11px;color:#aaa;">${c.dayLabel}</div>
+            <div style="font-size:20px;color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+          </td>`;
         }).join('');
 
         tableRows += `<tr style="background:${rowBg};">
-          <td class="wklabel">Wk ${w} <span class="wkrange">${weekRange}</span></td>
+          <td style="padding:3px 6px;border:1px solid #ddd;white-space:nowrap;font-weight:700;font-size:14px;background:#22c55e;color:#000;width:130px;">
+            Wk ${w} <span style="font-size:11px;font-weight:400;color:#1a5c30;">${weekRange}</span>
+          </td>
           ${dayCols}
-          <td class="summary" style="color:${weekDeaths>0?'#dc2626':'#aaa'};font-weight:700;">${weekDeaths>0?weekDeaths:'—'}</td>
-          <td class="summary" style="color:#666;">${weekMortPct}</td>
-          <td class="summary" style="color:#16a34a;">${livability}</td>
+          <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};width:50px;">${weekDeaths > 0 ? weekDeaths : '—'}</td>
+          <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:16px;color:#666;width:45px;">${weekMortPct}</td>
+          <td style="text-align:center;padding:3px 4px;border:1px solid #ddd;font-size:16px;color:#16a34a;width:55px;">${livability}</td>
         </tr>`;
       }
 
-      const totalDead = logs.reduce((s,l) => s+(l.deaths||0), 0);
-      const totalMort = placed > 0 ? ((totalDead/placed)*100).toFixed(2) : 'N/A';
-      const finalLiv = placed > 0 ? (((placed-totalDead)/placed)*100).toFixed(2) : 'N/A';
+      const totalMortPct = placed > 0 ? ((runningTotal / placed) * 100).toFixed(2) : 'N/A';
+      const finalLivability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) : 'N/A';
+      const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
 
-      const win = window.open('', '_blank', 'width=' + screen.width + ',height=' + screen.height);
-      if (!win) { window.print(); return; }
+      body.innerHTML = `
+        <style>
+          .mort-wrap { font-family: Arial, sans-serif; color:#111; max-width:100%; margin:0 auto; padding:8px; box-sizing:border-box; }
+          @media print {
+            @page { size: landscape; margin: 0.2in; }
+            .mort-wrap { padding:0; }
+          }
+        </style>
+        <div class="mort-wrap">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #22c55e;padding-bottom:6px;margin-bottom:8px;">
+            <div>
+              <div style="font-size:15px;font-weight:700;">${farmName}</div>
+              <div style="font-size:12px;color:#333;font-weight:600;">21-Week Mortality Sheet — Flock #${flockId}</div>
+              <div style="font-size:10px;color:#888;">Generated: ${now}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;min-width:400px;">
+              <div style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;text-align:center;background:#f0fdf4;">
+                <div style="font-size:8px;color:#666;text-transform:uppercase;">Birds Placed</div>
+                <div style="font-size:12px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;text-align:center;background:#fef2f2;">
+                <div style="font-size:8px;color:#666;text-transform:uppercase;">Total Dead</div>
+                <div style="font-size:12px;font-weight:700;color:#dc2626;">${totalDeadFromLogs}</div>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;text-align:center;background:#f0fdf4;">
+                <div style="font-size:8px;color:#666;text-transform:uppercase;">Birds Left</div>
+                <div style="font-size:12px;font-weight:700;color:#16a34a;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</div>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;text-align:center;background:#fffbeb;">
+                <div style="font-size:8px;color:#666;text-transform:uppercase;">Mortality %</div>
+                <div style="font-size:12px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
+              </div>
+              <div style="border:1px solid #ddd;border-radius:6px;padding:4px 8px;text-align:center;background:#f0fdf4;">
+                <div style="font-size:8px;color:#666;text-transform:uppercase;">Livability</div>
+                <div style="font-size:12px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
+              </div>
+            </div>
+          </div>
 
-      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-      <title>Mortality Sheet — Flock #${flockId}</title>
-      <style>
-        @page { size: landscape; margin: 0.2in; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body { background: white; font-family: Arial, sans-serif; color: #111;
-          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { padding: 0; margin: 0; }
-        #sheet { width: 100%; }
-        .header { border-bottom: 3px solid #22c55e; padding-bottom: 5px; margin-bottom: 5px;
-                  display: flex; justify-content: space-between; align-items: flex-start; }
-        .header h1 { font-size: 15px; font-weight: 700; }
-        .header h2 { font-size: 11px; font-weight: 600; color: #333; }
-        .header p  { font-size: 9px; color: #888; }
-        .stats { display: flex; gap: 6px; }
-        .stat { border: 1px solid #ddd; border-radius: 5px; padding: 3px 8px; text-align: center; }
-        .stat .sl { font-size: 7px; color: #666; text-transform: uppercase; }
-        .stat .sv { font-size: 12px; font-weight: 700; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 4px; }
-        col.wk  { width: 13%; }
-        col.day { width: 8.15%; }
-        col.sum { width: 7.18%; }
-        th { background: #111; color: #fff; font-size: 12px; padding: 14px 2px; text-align: center; }
-        th:first-child { text-align: left; padding-left: 6px; }
-        tbody tr:nth-child(even) td { background: #f9f9f9; }
-        td { border: 1px solid #eee; padding: 0 2px; text-align: center; font-size: 11px; vertical-align: middle; height: 60px; }
-        td:first-child { text-align: left; }
-        .dlabel { font-size: 8px; color: #aaa; line-height: 1; }
-        .dval   { font-size: 13px; line-height: 1.4; }
-        .wklabel { font-size: 12px; font-weight: 700; background: #22c55e !important; color: #000; padding: 0 5px; }
-        .wkrange { font-size: 9px; font-weight: 400; color: #1a5c30; display: block; }
-        .summary { font-size: 13px; }
-        tfoot td { background: #111 !important; color: #fff; font-weight: 700; font-size: 13px; padding: 12px 5px; height: 30px; }
-        .footer { margin-top: 4px; font-size: 7px; color: #999; text-align: center; }
-      </style>
-      </head><body>
-      <div id="sheet">
-      <div class="header">
-        <div>
-          <h1>${farmName}</h1>
-          <h2>21-Week Mortality Sheet — Flock #${flockId}</h2>
-          <p>Generated: ${now}</p>
+          <table class="mort-table" style="width:100%;border-collapse:collapse;font-size:18px;">
+            <thead>
+              <tr style="background:#111;color:#fff;">
+                <th style="padding:6px;border:1px solid #333;text-align:left;white-space:nowrap;font-size:13px;">Week</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Sun</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Mon</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Tue</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Wed</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Thu</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Fri</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;">Sat</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:50px;">Wk Dead</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:45px;">Mort%</th>
+                <th style="padding:6px;border:1px solid #333;text-align:center;font-size:13px;width:55px;">Livability</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRows}
+            </tbody>
+            <tfoot>
+              <tr style="background:#111;color:#fff;font-weight:700;">
+                <td colspan="8" style="padding:4px 6px;border:1px solid #333;text-align:right;font-size:10px;">TOTALS</td>
+                <td style="padding:4px;border:1px solid #333;text-align:center;color:#ef4444;">${totalDeadFromLogs}</td>
+                <td style="padding:4px;border:1px solid #333;text-align:center;color:#ef4444;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</td>
+                <td style="padding:4px;border:1px solid #333;text-align:center;color:#22c55e;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
+            FlockPro · ${farmName} · Flock #${flockId} · ${now}
+          </div>
         </div>
-        <div class="stats">
-          <div class="stat" style="background:#f0fdf4;"><div class="sl">Birds Placed</div><div class="sv">${placed>0?placed.toLocaleString():'⚠️'}</div></div>
-          <div class="stat" style="background:#fef2f2;"><div class="sl">Total Dead</div><div class="sv" style="color:#dc2626;">${totalDead}</div></div>
-          <div class="stat" style="background:#f0fdf4;"><div class="sl">Birds Left</div><div class="sv" style="color:#16a34a;">${placed>0?(placed-totalDead).toLocaleString():'—'}</div></div>
-          <div class="stat" style="background:#fffbeb;"><div class="sl">Mortality %</div><div class="sv" style="color:#d97706;">${totalMort==='N/A'?'N/A':totalMort+'%'}</div></div>
-          <div class="stat" style="background:#f0fdf4;"><div class="sl">Livability</div><div class="sv" style="color:#16a34a;">${finalLiv==='N/A'?'N/A':finalLiv+'%'}</div></div>
-        </div>
-      </div>
-      <table>
-        <colgroup>
-          <col class="wk">
-          <col class="day"><col class="day"><col class="day"><col class="day">
-          <col class="day"><col class="day"><col class="day">
-          <col class="sum"><col class="sum"><col class="sum">
-        </colgroup>
-        <thead><tr>
-          <th>Week</th><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
-          <th>Wk Dead</th><th>Mort%</th><th>Livability</th>
-        </tr></thead>
-        <tbody>${tableRows}</tbody>
-        <tfoot><tr>
-          <td colspan="8" style="text-align:right;padding:4px 8px;">TOTALS</td>
-          <td style="color:#ef4444;text-align:center;">${totalDead}</td>
-          <td style="color:#ef4444;text-align:center;">${totalMort==='N/A'?'N/A':totalMort+'%'}</td>
-          <td style="color:#22c55e;text-align:center;">${finalLiv==='N/A'?'N/A':finalLiv+'%'}</td>
-        </tr></tfoot>
-      </table>
-      <div class="footer">FlockPro · ${farmName} · Flock #${flockId} · ${now}</div>
-      </div>
-      <script>
-        window.onload = function() {
-          setTimeout(function(){ window.print(); }, 150);
-          setTimeout(function(){ window.close(); }, 700);
-        };
-      <\/script>
-      </body></html>`);
-      win.document.close();
+      `;
+
+      openPreviewOverlay();
+      } // end buildMortalityOverlay
     }
+    // ===== END MORTALITY SHEET =====
 
     // Initialize app
     const app = new FlockProApp();
