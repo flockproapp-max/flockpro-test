@@ -716,65 +716,21 @@
     @page { size: portrait; margin: 0.4in; }
 
     @media print {
-      /* Make the overlay act like a normal document when printing */
-      #printPreviewOverlay {
-        display: block !important;
-        position: static !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-        background: white !important;
-      }
-      #printPreviewToolbar { display: none !important; }
-      #printPreviewBody {
-        display: block !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        padding-bottom: 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        border-radius: 0 !important;
-        overflow: visible !important;
-      }
-      /* Flock table fills full width */
-      #printPreviewBody .flock-table-scroll {
-        overflow: visible !important;
-        width: 100% !important;
-      }
-      #printPreviewBody .flock-table {
-        width: 100% !important;
-        font-size: 9px !important;
-        white-space: nowrap !important;
-      }
-      #printPreviewBody .flock-table th,
-      #printPreviewBody .flock-table td {
-        padding: 4px 6px !important;
-        white-space: nowrap !important;
-      }
-      /* Grids reflow naturally */
-      #printPreviewBody .stat-row,
-      #printPreviewBody .metric-row {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        overflow: visible !important;
-      }
-      #printPreviewBody .stat-box,
-      #printPreviewBody .metric-box {
-        flex: 1 1 auto !important;
-        min-width: 80px !important;
-        page-break-inside: avoid !important;
-      }
-      /* Section headers stay with their content */
-      #printPreviewBody h2 {
-        page-break-after: avoid !important;
-      }
-      /* Table rows don't split across pages */
-      #printPreviewBody tr {
-        page-break-inside: avoid !important;
-      }
-      /* Hide everything else */
-      body > *:not(#printPreviewOverlay) { display: none !important; }
+      /* Print the report app view directly */
+      body { background: white !important; color: black !important; }
+      #app { overflow: visible !important; height: auto !important; position: static !important; }
+      #root { overflow: visible !important; }
+      .top-nav, .btn-secondary, .btn-primary { display: none !important; }
+      .modern-card { background: white !important; color: black !important; border: none !important; box-shadow: none !important; }
+      .container { padding: 0 !important; }
+      /* Flock table horizontal scroll becomes visible for print */
+      div[style*="overflow-x:auto"] { overflow: visible !important; }
+      table { width: 100% !important; font-size: 9px !important; }
+      th, td { padding: 4px 5px !important; white-space: nowrap !important; }
+      h2 { page-break-after: avoid !important; font-size: 12px !important; }
+      tr { page-break-inside: avoid !important; }
+      /* Hide old overlay */
+      #printPreviewOverlay { display: none !important; }
     }
     /* ===== END PRINT PREVIEW ===== */
 
@@ -3833,6 +3789,56 @@
         page-break-inside: avoid;
       }
     }
+
+    /* ===== MORTALITY REPORT 22-WEEK FIT ===== */
+    @media print {
+      @page { size: letter portrait; margin: 0.2in; }
+
+      /* Allow the mortality report card to break across pages if needed,
+         but scale everything down so all 22 weeks fit on ONE page */
+      .modern-card {
+        page-break-inside: auto !important;
+      }
+
+      /* Target the mortality week table rows - make them compact */
+      .modern-card table tr td table {
+        font-size: 7px !important;
+      }
+      .modern-card table tr td table td {
+        padding: 1px !important;
+        font-size: 7px !important;
+        min-width: 0 !important;
+      }
+      .modern-card table tr td table td > div {
+        font-size: 6px !important;
+        line-height: 1.1 !important;
+      }
+      /* Week header rows */
+      .modern-card table tr td table tr[style*="background:#22c55e"] td {
+        padding: 1px 4px !important;
+        font-size: 8px !important;
+      }
+      /* Totals rows */
+      .modern-card table tr td table tr[style*="background:#f8f8f8"] td {
+        padding: 1px 4px !important;
+      }
+
+      /* Shrink the summary stats boxes at top */
+      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] {
+        gap: 4px !important;
+        margin-bottom: 6px !important;
+      }
+      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div {
+        padding: 4px !important;
+      }
+      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div > div:last-child {
+        font-size: 12px !important;
+      }
+      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div > div:first-child {
+        font-size: 7px !important;
+      }
+    }
+    /* ===== END MORTALITY REPORT 22-WEEK FIT ===== */
     
     /* Global Select Dropdown Styling */
     select {
@@ -5123,8 +5129,8 @@
             flock.shipped,
             flock.weight,
             flock.revenue,
-            metrics.totalExpenses,
-            metrics.totalProfit,
+            metrics.expenses,
+            metrics.profit,
             metrics.livability.toFixed(2),
             metrics.fcr.toFixed(3),
             metrics.adg.toFixed(3)
@@ -6368,6 +6374,12 @@
           case 'settings':
             content += this.renderSettings();
             break;
+          case 'report':
+            content += this.renderReport();
+            break;
+          case 'mortality-report':
+            content += this.renderMortalityReport();
+            break;
         }
         
         // Add beta footer to all pages
@@ -6435,7 +6447,7 @@
                   ${flock.shippedDate ? `<div style="color: #666; font-size: 0.9em;">Shipped: ${this.formatDate(flock.shippedDate)}</div>` : ''}
                   <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em;">
                     <span style="color: #9ca3af;">Completion: ${progress}%</span>
-                    <span class="${metrics.totalProfit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.totalProfit)}</span>
+                    <span class="${metrics.profit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.profit)}</span>
                   </div>
                   <div class="progress-bar">
                     <div class="progress-fill" style="width: ${progress}%"></div>
@@ -6473,7 +6485,7 @@
           ${flock.shippedDate ? `<div style="color: #666; font-size: 0.9em;">Shipped: ${this.formatDate(flock.shippedDate)}</div>` : ''}
           <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em;">
             <span style="color: #9ca3af;">Completion: ${progress}%</span>
-            <span class="${metrics.totalProfit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.totalProfit)}</span>
+            <span class="${metrics.profit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.profit)}</span>
           </div>
           <div class="progress-bar">
             <div class="progress-fill" style="width: ${progress}%"></div>
@@ -6590,7 +6602,7 @@
         let totalProfit = 0;
         this.flocks.forEach(flock => {
           const metrics = this.calculateMetrics(flock);
-          totalProfit += metrics.totalProfit;
+          totalProfit += metrics.profit;
         });
         
         // Get recent flocks (last 3)
@@ -6795,8 +6807,8 @@
                           </div>
                         </div>
                         <div style="text-align: right;">
-                          <div class="${metrics.totalProfit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">
-                            ${this.fmt(metrics.totalProfit)}
+                          <div class="${metrics.profit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600; font-size: 1.1em; margin-bottom: 4px;">
+                            ${this.fmt(metrics.profit)}
                           </div>
                           <div style="color: #888; font-size: 0.9em;">
                             ${progress}% Complete
@@ -7299,7 +7311,7 @@
                       ${flock.shippedDate ? `<div style="color: #666; font-size: 0.9em;">Shipped: ${this.formatDate(flock.shippedDate)}</div>` : ''}
                       <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.9em;">
                         <span style="color: #9ca3af;">Completion: ${progress}%</span>
-                        <span class="${metrics.totalProfit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.totalProfit)}</span>
+                        <span class="${metrics.profit >= 0 ? 'profit' : 'loss'}" style="font-weight: 600;">${this.fmt(metrics.profit)}</span>
                       </div>
                       <div class="progress-bar">
                         <div class="progress-fill" style="width: ${progress}%"></div>
@@ -7339,13 +7351,13 @@
         if (!this.currentFlock) return '';
         
         const metrics = this.calculateMetrics(this.currentFlock);
-        const profitClass = metrics.totalProfit >= 0 ? 'profit' : 'loss';
+        const profitClass = metrics.profit >= 0 ? 'profit' : 'loss';
 
         return `
           <div class="container">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
               <button onclick="app.undo()" class="btn btn-secondary" ${this.undoStack.length === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>↶ Undo</button>
-              <button onclick="showPrintPreview()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Preview</button>
+              <button onclick="app.openReportView('flock')" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">📄 Report</button>
             </div>
 
             <!-- Flock Tab Switcher -->
@@ -7360,7 +7372,7 @@
 
             ${this.flockTab === 'daily' ? this.renderDailyInput() : `
               <div class="arduino-card">
-                <h1 class="profit-big ${profitClass}">${this.fmt(metrics.totalProfit)}</h1>
+                <h1 class="profit-big ${profitClass}">${this.fmt(metrics.profit)}</h1>
                 <p style="text-align:center; color: #888;">TOTAL PROFIT</p>
               </div>
 
@@ -8060,7 +8072,7 @@
             <div style="background:#1a1a1a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
               <span style="color:#22c55e;font-weight:700;font-size:0.95em;">🖨️ Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</span>
               <div style="display:flex;gap:8px;">
-                <button onclick="showMortalitySheet()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
+                <button onclick="app.openMortalityReport()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
                 <button onclick="app.currentView='flock'; app.flockTab='daily'; app.render();" style="background:#444;color:#fff;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">✕ Close</button>
               </div>
             </div>
@@ -8728,7 +8740,7 @@
                       }, false)}
                       ${this.renderComparisonRow('💵 Total Profit', compareFlocks, f => {
                         const metrics = this.calculateMetrics(f);
-                        return '$' + this.fmt(metrics.totalProfit);
+                        return '$' + this.fmt(metrics.profit);
                       }, true, 'high')}
                       ${this.renderComparisonRow('🐦 Profit/Bird', compareFlocks, f => {
                         const metrics = this.calculateMetrics(f);
@@ -8794,7 +8806,7 @@
 
         // Find winners in each category
         const bestProfit = metrics.reduce((best, current) => 
-          current.metrics.totalProfit > best.metrics.totalProfit ? current : best
+          current.metrics.profit > best.metrics.profit ? current : best
         );
         
         const bestFCR = metrics.reduce((best, current) => 
@@ -8810,7 +8822,7 @@
             <div style="padding: 16px; background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; border-radius: 8px;">
               <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">🏆 Best Overall Profit</div>
               <div style="font-size: 1.2em; font-weight: bold;">Flock #${this.escapeHtml(String(bestProfit.flock.id))}</div>
-              <div style="color: #888; margin-top: 4px;">$${this.fmt(bestProfit.metrics.totalProfit)} total profit</div>
+              <div style="color: #888; margin-top: 4px;">$${this.fmt(bestProfit.metrics.profit)} total profit</div>
             </div>
 
             <div style="padding: 16px; background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; border-radius: 8px;">
@@ -8879,14 +8891,13 @@
               </div>
             </div>
 
+            ${this.selectedFlockIds.length > 0 ? `
+              <div style="text-align: center; margin: 24px 0;">
+                <button onclick="app.openReportView('summary')" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.1em; background:#22c55e; color:#000; font-weight:700;">🖨️ Print Preview</button>
+              </div>
+            ` : ''}
             ${summary ? `
-              ${summary.flockCount > 0 ? `
-                <div style="text-align: center; margin: 24px 0;">
-                  <button onclick="showPrintPreview()" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.1em; background:#22c55e; color:#000; font-weight:700;">🖨️ 
-                    🖨️ Print Preview
-                  </button>
-                </div>
-              ` : ''}
+              ${summary.flockCount > 0 ? `` : ''}
 
               <div class="modern-card">
                 <h2>Summary Report</h2>
@@ -9173,6 +9184,343 @@
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px; padding: 16px; font-size: 1.1em;">SAVE SETTINGS</button>
               </form>
+            </div>
+          </div>
+        `;
+      }
+
+      renderReport() {
+        const now = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        const farmName = this.settings && this.settings.farmName ? this.settings.farmName : 'Farm Report';
+        const fmt = (v) => this.fmt(v);
+
+        // White-background card matching old print preview style
+        const card = (label, value, color) =>
+          `<div style="border:1px solid #ddd;border-radius:6px;padding:10px 12px;text-align:center;background:#fff;">
+             <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
+             <div style="font-size:18px;font-weight:700;color:${color||'#111'};margin-top:2px;">${value}</div>
+           </div>`;
+        const metricCard = (label, value) =>
+          `<div style="background:#f8f8f8;border-radius:6px;padding:8px 10px;text-align:center;">
+             <div style="font-size:10px;color:#666;text-transform:uppercase;">${label}</div>
+             <div style="font-size:15px;font-weight:700;color:#111;">${value}</div>
+           </div>`;
+        const sectionHead = (title) =>
+          `<h2 style="font-size:16px;margin:20px 0 8px;border-bottom:2px solid #22c55e;padding-bottom:4px;color:#111;">${title}</h2>`;
+        const statRow = (items) =>
+          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:10px 0;">${items}</div>`;
+        const metricRow = (items) =>
+          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin:8px 0;">${items}</div>`;
+
+        let reportContent = '';
+
+        if (this.reportSource === 'flock' && this.reportFlock) {
+          const f = this.reportFlock;
+          const m = this.calculateMetrics(f);
+          const profitClass = m.totalProfit >= 0 ? '#16a34a' : '#dc2626';
+
+          let expenseRows = '';
+          const expFields = [
+            ['showFeed','feedLabel','fCost'], ['showPoult','poultLabel','pCost'],
+            ['showMeds','medsLabel','meds'], ['showClean','cleanLabel','clean'],
+            ['showPest','pestLabel','pest'], ['showWater','waterLabel','water'],
+            ['showEquip','equipLabel','equip'], ['showRepairs','repairsLabel','repairs'],
+            ['showElectric','electricLabel','electric'], ['showGas','gasLabel','gas'],
+            ['showCoal','coalLabel','coal'], ['showLoading','loadingLabel','loading'],
+            ['showShavings','shavingsLabel','shavings'], ['showLabor','laborLabel','labor'],
+            ['showDep','depLabel','depreciation'], ['showFuel','fuelLabel','fuel'],
+            ['showMisc1','misc1Label','misc1'], ['showMisc2','misc2Label','misc2'],
+            ['showMisc3','misc3Label','misc3'], ['showMisc4','misc4Label','misc4']
+          ];
+          expFields.forEach(([showKey, labelKey, dataKey]) => {
+            const val = parseFloat(f[dataKey]) || 0;
+            if (this.settings[showKey] && val > 0) {
+              expenseRows += `<tr>
+                <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;color:#111;">${this.escapeHtml(this.settings[labelKey] || dataKey)}</td>
+                <td style="padding:6px 8px;border-bottom:1px solid #eee;font-size:13px;text-align:right;font-weight:700;color:#111;">${fmt(val)}</td>
+              </tr>`;
+            }
+          });
+
+          reportContent = `
+            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:16px;margin-bottom:24px;">
+              <h1 style="font-size:22px;margin:0 0 4px;color:#111;">FlockPro — Flock Report</h1>
+              <div style="font-size:13px;color:#555;">${this.escapeHtml(farmName)}</div>
+              <div style="font-size:12px;color:#888;">Generated: ${now}</div>
+            </div>
+            <div style="text-align:center;margin-bottom:20px;">
+              <div style="font-size:48px;font-weight:700;color:${profitClass};">${fmt(m.totalProfit)}</div>
+              <div style="font-size:12px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
+            </div>
+            ${sectionHead('📊 Financial Summary')}
+            ${statRow(
+              card('Revenue', fmt(f.revenue||0), '#16a34a') +
+              card('Total Expenses', fmt(m.totalExp), '#dc2626') +
+              card('Net Profit', fmt(m.totalProfit), profitClass)
+            )}
+            ${sectionHead('🐔 Flock Details')}
+            ${statRow(
+              card('Flock #', this.escapeHtml(String(f.id||''))) +
+              card('Barn', this.escapeHtml(f.barn||'—')) +
+              card('Placed', (f.placed||0).toLocaleString()) +
+              card('Shipped', (f.shipped||0).toLocaleString())
+            )}
+            ${statRow(
+              card('Started', f.startedDate||'—') +
+              card('Shipped Date', f.shippedDate||'—') +
+              card('Breed', this.escapeHtml(f.poultSupplier||'—')) +
+              card('Hatchery', this.escapeHtml(f.hatchery||'—')) +
+              card('Barn Sq Ft', f.barnSqFt?parseFloat(f.barnSqFt).toLocaleString():'—') +
+              card('Feed Used (lbs)', f.feedLbs?parseFloat(f.feedLbs).toLocaleString():'—')
+            )}
+            ${sectionHead('📈 Performance Metrics')}
+            ${metricRow(
+              metricCard('ADG', m.adg?m.adg.toFixed(4):'—') +
+              metricCard('Age', m.ageDays?Math.round(m.ageDays)+' days':'—') +
+              metricCard('FCR', m.fcr?m.fcr.toFixed(3):'—') +
+              metricCard('Livability', m.livability?m.livability.toFixed(1)+'%':'—') +
+              metricCard('Avg Weight', f.weight?parseFloat(f.weight).toFixed(2)+' lbs':'—') +
+              metricCard('Profit/Bird', m.profitPerBird!=null?'$'+m.profitPerBird.toFixed(2):'—') +
+              metricCard('Profit/Sq Ft', m.profitPerSqFt!=null?'$'+m.profitPerSqFt.toFixed(2):'—') +
+              metricCard('Sq Ft/Bird', m.sqFtPerBird?m.sqFtPerBird.toFixed(2):'—') +
+              metricCard('Paid/lb', f.pricePerLb?'$'+parseFloat(f.pricePerLb).toFixed(4):'—')
+            )}
+            ${expenseRows ? `
+              ${sectionHead('💰 Expense Breakdown')}
+              <table style="width:100%;border-collapse:collapse;">${expenseRows}</table>
+            ` : ''}
+            <div style="margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#999;text-align:center;margin-bottom:20px;">
+              FlockPro v${this.appVersion} • ${this.escapeHtml(farmName)} • ${now}
+            </div>
+          `;
+
+        } else if (this.reportSource === 'summary' && this.reportSummaryData) {
+          const { s, selectedFlocks, flockRows, expenseBreakdown } = this.reportSummaryData;
+          const profitColor = s.profit >= 0 ? '#16a34a' : '#dc2626';
+
+          reportContent = `
+            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:16px;margin-bottom:24px;">
+              <h1 style="font-size:22px;margin:0 0 4px;color:#111;">FlockPro — Summary Report</h1>
+              <div style="font-size:13px;color:#555;">${this.escapeHtml(farmName)}</div>
+              <div style="font-size:12px;color:#888;">Generated: ${now} | ${selectedFlocks.length} Flocks Selected</div>
+            </div>
+            <div style="text-align:center;margin-bottom:20px;">
+              <div style="font-size:48px;font-weight:700;color:${profitColor};">${fmt(s.profit)}</div>
+              <div style="font-size:12px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
+            </div>
+            ${sectionHead('📊 Financial Overview')}
+            ${statRow(
+              card('Total Placed', s.placed.toLocaleString()) +
+              card('Total Shipped', s.shipped.toLocaleString()) +
+              card('Total Revenue', fmt(s.revenue), '#16a34a') +
+              card('Total Expenses', fmt(s.expenses), '#dc2626') +
+              card('Net Profit', fmt(s.profit), profitColor)
+            )}
+            ${sectionHead('📈 Group Performance Metrics')}
+            ${metricRow(
+              metricCard('ADG', s.adg?s.adg.toFixed(4):'—') +
+              metricCard('FCR', s.fcr?s.fcr.toFixed(3):'—') +
+              metricCard('Livability', s.livability?s.livability.toFixed(1)+'%':'—') +
+              metricCard('Avg Age', s.avgAge?Math.round(s.avgAge)+' days':'—') +
+              metricCard('Avg Weight', s.avgWeight?s.avgWeight.toFixed(2)+' lbs':'—') +
+              metricCard('Profit/Bird', s.profitPerBird?'$'+s.profitPerBird.toFixed(2):'—') +
+              metricCard('Profit/Sq Ft', s.profitPerSqFt?'$'+s.profitPerSqFt.toFixed(2):'—') +
+              metricCard('Sq Ft/Bird', s.sqFtPerBird?s.sqFtPerBird.toFixed(2):'—') +
+              metricCard('Paid/lb', s.avgPricePerLb?'$'+s.avgPricePerLb.toFixed(3):'—')
+            )}
+            ${expenseBreakdown ? `
+              ${sectionHead('💰 Expense Breakdown')}
+              <table style="width:100%;border-collapse:collapse;">${expenseBreakdown}</table>
+            ` : ''}
+            ${flockRows ? `
+              ${sectionHead('🐔 Individual Flock Results')}
+              <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:700px;">
+                  <thead><tr style="background:#f0f0f0;">
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Flock #</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Barn</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">ADG</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">FCR</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Livability</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Age</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Avg Wt</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Profit/Bird</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Profit/Sq Ft</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Sq Ft/Bird</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Paid/lb</th>
+                    <th style="padding:7px 8px;text-align:left;border:1px solid #ddd;color:#111;white-space:nowrap;">Profit</th>
+                  </tr></thead>
+                  <tbody>${flockRows}</tbody>
+                </table>
+              </div>
+            ` : ''}
+            <div style="margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#999;text-align:center;margin-bottom:20px;">
+              FlockPro v${this.appVersion} • ${this.escapeHtml(farmName)} • ${now}
+            </div>
+          `;
+        } else {
+          reportContent = `<p style="text-align:center;color:#888;padding:40px;">No report data available.</p>`;
+        }
+
+        const backView = this.reportSource === 'flock' ? 'flock' : 'summary';
+        return `
+          <div class="container">
+            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
+                <button onclick="app.navigate('${backView}')" class="btn btn-secondary">← Back</button>
+                <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
+              </div>
+              ${reportContent}
+            </div>
+          </div>
+        `;
+      }
+
+      renderMortalityReport() {
+        const flock = this.currentFlock;
+        const logs = this.dailyLogs || [];
+        const farmName = (this.settings && this.settings.farmName) ? this.settings.farmName : 'Farm';
+        const flockId = flock.id || '—';
+        const placed = parseFloat(String(flock.placed||0).replace(/[,$]/g,'')) || parseFloat(String(flock.birdsPlaced||0).replace(/[,$]/g,'')) || 0;
+        const placedDate = flock.placedDate || flock.startDate || flock.startedDate || null;
+        const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+        const deathsByDate = {};
+        logs.forEach(l => {
+          if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0);
+        });
+
+        const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const WEEKS = 22;
+        let weekCards = '';
+        let runningTotal = 0;
+        const base = placedDate ? new Date(placedDate + 'T00:00:00') : null;
+        const fmtD = d => String(d.getMonth()+1).padStart(2,'0') + '/' + String(d.getDate()).padStart(2,'0');
+        const toYMD = d => d.toISOString().split('T')[0];
+
+        for (let w = 1; w <= WEEKS; w++) {
+          const dayCells = [];
+          let weekDeaths = 0;
+          let weekStartDate = null;
+          let weekEndDate = null;
+
+          for (let d = 0; d < 7; d++) {
+            const dayIndex = (w - 1) * 7 + d;
+            let dayDeaths = 0;
+            let dayLabel = '';
+            if (base) {
+              const dayDate = new Date(base);
+              dayDate.setDate(base.getDate() + dayIndex);
+              const ymd = toYMD(dayDate);
+              dayDeaths = deathsByDate[ymd] || 0;
+              dayLabel = fmtD(dayDate);
+              if (d === 0) weekStartDate = dayDate;
+              if (d === 6) weekEndDate = dayDate;
+            } else {
+              dayLabel = 'D' + (dayIndex + 1);
+            }
+            weekDeaths += dayDeaths;
+            dayCells.push({ dayDeaths, dayLabel });
+          }
+
+          runningTotal += weekDeaths;
+          const weekMortPct = placed > 0 && weekDeaths > 0 ? ((weekDeaths / placed) * 100).toFixed(2) + '%' : '—';
+          const livability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) + '%' : '—';
+          const weekRange = base ? (fmtD(weekStartDate) + ' – ' + fmtD(weekEndDate)) : ('Days ' + ((w-1)*7+1) + '–' + (w*7));
+
+          const dayCellsHtml = DAY_NAMES.map((name, i) => {
+            const c = dayCells[i];
+            const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
+            const weight = c.dayDeaths > 0 ? '700' : '400';
+            return `<td style="text-align:center;padding:3px 1px;border:1px solid #eee;font-size:10px;min-width:30px;">
+              <div style="font-size:8px;color:#888;">${name}</div>
+              <div style="font-size:8px;color:#22c55e;font-weight:700;">${c.dayLabel}</div>
+              <div style="color:${color};font-weight:${weight};font-size:10px;">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            </td>`;
+          }).join('');
+
+          weekCards += `
+            <tr>
+              <td colspan="9" style="padding:0;">
+                <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
+                  <tr style="background:#22c55e;">
+                    <td colspan="9" style="padding:3px 8px;font-weight:700;font-size:11px;color:#000;">
+                      Week ${w} <span style="font-weight:400;font-size:10px;margin-left:8px;">${weekRange}</span>
+                      ${weekDeaths > 0 ? `<span style="float:right;background:#fca5a5;color:#7f1d1d;padding:1px 6px;border-radius:10px;font-size:10px;">${weekDeaths}</span>` : ''}
+                    </td>
+                  </tr>
+                  <tr>${dayCellsHtml}</tr>
+                  <tr style="background:#f8f8f8;">
+                    <td colspan="3" style="padding:3px 8px;font-size:9px;text-align:center;border:1px solid #eee;">
+                      <div style="color:#888;text-transform:uppercase;font-size:8px;">Wk Mort%</div>
+                      <div style="font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};">${weekMortPct}</div>
+                    </td>
+                    <td colspan="3" style="padding:3px 8px;font-size:9px;text-align:center;border:1px solid #eee;">
+                      <div style="color:#888;text-transform:uppercase;font-size:8px;">Total Dead</div>
+                      <div style="font-weight:700;color:${runningTotal>0?'#dc2626':'#aaa'};">${runningTotal > 0 ? runningTotal.toLocaleString() : '—'}</div>
+                    </td>
+                    <td colspan="3" style="padding:3px 8px;font-size:9px;text-align:center;border:1px solid #eee;">
+                      <div style="color:#888;text-transform:uppercase;font-size:8px;">Livability</div>
+                      <div style="font-weight:700;color:#16a34a;">${livability}</div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          `;
+        }
+
+        const totalMortPct = placed > 0 ? ((runningTotal / placed) * 100).toFixed(2) : 'N/A';
+        const finalLivability = placed > 0 ? (((placed - runningTotal) / placed) * 100).toFixed(2) : 'N/A';
+        const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
+
+        return `
+          <div class="container">
+            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;padding:12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+                <button onclick="app.navigate('flock')" class="btn btn-secondary">← Back</button>
+                <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
+              </div>
+
+              <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:12px;margin-bottom:14px;">
+                <div style="font-size:18px;font-weight:700;">${this.escapeHtml(farmName)}</div>
+                <div style="font-size:14px;font-weight:600;color:#333;margin-top:3px;">22-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
+                <div style="font-size:11px;color:#888;margin-top:3px;">Generated: ${now}</div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
+                <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
+                  <div style="font-size:9px;color:#666;text-transform:uppercase;">Birds Placed</div>
+                  <div style="font-size:16px;font-weight:700;color:#111;">${placed > 0 ? placed.toLocaleString() : '⚠️ Not Set'}</div>
+                </div>
+                <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fef2f2;">
+                  <div style="font-size:9px;color:#666;text-transform:uppercase;">Total Dead</div>
+                  <div style="font-size:16px;font-weight:700;color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
+                </div>
+                <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fffbeb;">
+                  <div style="font-size:9px;color:#666;text-transform:uppercase;">Mortality %</div>
+                  <div style="font-size:16px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
+                </div>
+                <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
+                  <div style="font-size:9px;color:#666;text-transform:uppercase;">Livability</div>
+                  <div style="font-size:16px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
+                </div>
+              </div>
+
+              <table style="width:100%;border-collapse:collapse;">
+                <tbody>${weekCards}</tbody>
+              </table>
+
+              <div style="margin-top:12px;padding:10px;background:#111;color:#22c55e;border-radius:6px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;">
+                <div><div style="font-size:8px;color:#888;text-transform:uppercase;">Total Dead</div><div style="font-weight:700;color:#ef4444;">${totalDeadFromLogs.toLocaleString()}</div></div>
+                <div><div style="font-size:8px;color:#888;text-transform:uppercase;">Mortality %</div><div style="font-weight:700;color:#ef4444;">${totalMortPct}%</div></div>
+                <div><div style="font-size:8px;color:#888;text-transform:uppercase;">Birds Left</div><div style="font-weight:700;color:#22c55e;">${(placed - totalDeadFromLogs).toLocaleString()}</div></div>
+                <div><div style="font-size:8px;color:#888;text-transform:uppercase;">Livability</div><div style="font-weight:700;color:#22c55e;">${finalLivability}%</div></div>
+              </div>
+
+              <div style="margin-top:12px;padding-top:8px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center;">
+                FlockPro v${this.appVersion} · ${this.escapeHtml(farmName)} · Flock #${this.escapeHtml(String(flockId))} · ${now}
+              </div>
             </div>
           </div>
         `;
@@ -9502,6 +9850,83 @@
         this.currentView = view;
         this.mobileMenuOpen = false;
         this.render();
+      }
+
+      openMortalityReport() {
+        if (!this.currentFlock) return;
+        this.loadDailyLogs().then(() => {
+          this.currentView = 'mortality-report';
+          this.render();
+        }).catch(() => {
+          this.currentView = 'mortality-report';
+          this.render();
+        });
+      }
+
+      openReportView(source) {
+        this.reportSource = source;
+        if (source === 'flock') {
+          this.reportFlock = this.currentFlock;
+          this.currentView = 'report';
+          this.render();
+        } else if (source === 'summary') {
+          // Build summary data before navigating
+          const selectedFlocks = this.flocks.filter(f => this.selectedFlockIds.includes(f.docId));
+          if (selectedFlocks.length === 0) {
+            this.showToast('Please select flocks first', 'error');
+            return;
+          }
+          const s = this.calculateSummary(selectedFlocks);
+          const fmt = (v) => this.fmt(v);
+          // Build flockRows for the table
+          let flockRows = '';
+          selectedFlocks.forEach(f => {
+            const m = this.calculateMetrics(f);
+            const profitColor = m.totalProfit >= 0 ? '#16a34a' : '#dc2626';
+            flockRows += `<tr>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${this.escapeHtml(String(f.id||''))}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${this.escapeHtml(f.barn||'—')}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.adg?m.adg.toFixed(4):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.fcr?m.fcr.toFixed(3):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.livability?m.livability.toFixed(1)+'%':'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.ageDays?Math.round(m.ageDays)+'d':'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${f.weight?parseFloat(f.weight).toFixed(2)+' lbs':'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.profitPerBird!=null?'$'+m.profitPerBird.toFixed(2):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.profitPerSqFt!=null?'$'+m.profitPerSqFt.toFixed(2):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${m.sqFtPerBird?m.sqFtPerBird.toFixed(2):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;">${f.pricePerLb?'$'+parseFloat(f.pricePerLb).toFixed(4):'—'}</td>
+              <td style="padding:6px;border-bottom:1px solid #2a2a2a;color:${profitColor};font-weight:700;">${fmt(m.totalProfit)}</td>
+            </tr>`;
+          });
+          // Build expense breakdown
+          let expBreakdown = '';
+          const expFields = [
+            ['showFeed','feedLabel','fCost'], ['showPoult','poultLabel','pCost'],
+            ['showMeds','medsLabel','meds'], ['showClean','cleanLabel','clean'],
+            ['showPest','pestLabel','pest'], ['showWater','waterLabel','water'],
+            ['showEquip','equipLabel','equip'], ['showRepairs','repairsLabel','repairs'],
+            ['showElectric','electricLabel','electric'], ['showGas','gasLabel','gas'],
+            ['showCoal','coalLabel','coal'], ['showLoading','loadingLabel','loading'],
+            ['showShavings','shavingsLabel','shavings'], ['showLabor','laborLabel','labor'],
+            ['showDep','depLabel','depreciation'], ['showFuel','fuelLabel','fuel'],
+            ['showMisc1','misc1Label','misc1'], ['showMisc2','misc2Label','misc2'],
+            ['showMisc3','misc3Label','misc3'], ['showMisc4','misc4Label','misc4']
+          ];
+          expFields.forEach(([showKey, labelKey, dataKey]) => {
+            if (this.settings[showKey]) {
+              const total = selectedFlocks.reduce((sum, f) => sum + (parseFloat(f[dataKey]) || 0), 0);
+              if (total > 0) {
+                expBreakdown += `<tr>
+                  <td style="padding:8px 4px;border-bottom:1px solid #2a2a2a;">${this.escapeHtml(this.settings[labelKey] || dataKey)}</td>
+                  <td style="padding:8px 4px;border-bottom:1px solid #2a2a2a;text-align:right;font-weight:700;">${fmt(total)}</td>
+                </tr>`;
+              }
+            }
+          });
+          this.reportSummaryData = { s, selectedFlocks, flockRows, expenseBreakdown: expBreakdown };
+          this.currentView = 'report';
+          this.render();
+        }
       }
 
       viewFlock(docId) {
@@ -10956,45 +11381,17 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function smartPrint() {
-      const landscapeSection = document.querySelector('#printPreviewBody .landscape-section');
-      
-      if (!landscapeSection) {
-        // No flock table - just print normally
-        window.print();
-        return;
-      }
-
-      // Step 1: Hide the landscape section and print page 1 portrait
-      landscapeSection.style.display = 'none';
+      // Print the report view directly - hide nav, print, restore
+      const nav = document.querySelector('.top-nav');
+      const backBtn = document.querySelector('.container .btn-secondary');
+      const printBtn = document.querySelector('.container .btn-primary');
+      if (nav) nav.style.display = 'none';
+      if (backBtn) backBtn.style.display = 'none';
+      if (printBtn) printBtn.style.display = 'none';
       window.print();
-      landscapeSection.style.display = '';
-
-      // Step 2: Open a new window with just the flock table, print it landscape
-      const tableHTML = landscapeSection.innerHTML;
-      const win = window.open('', '_blank');
-      win.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <style>
-            @page { size: landscape; margin: 0.4in; }
-            body { font-family: Arial, sans-serif; margin: 0; padding: 10px; }
-            h2 { font-size: 14px; border-bottom: 2px solid #22c55e; padding-bottom: 6px; margin-bottom: 10px; }
-            table { width: 100%; border-collapse: collapse; font-size: 9px; }
-            th { background: #f0f0f0; padding: 5px 6px; text-align: left; border: 1px solid #ddd; white-space: nowrap; }
-            td { padding: 4px 6px; border: 1px solid #eee; white-space: nowrap; }
-            tr:nth-child(even) td { background: #fafafa; }
-            .profit { color: #16a34a; font-weight: 700; }
-            .loss { color: #dc2626; font-weight: 700; }
-          </style>
-        </head>
-        <body>
-          ${tableHTML}
-          <script>window.onload = function(){ window.print(); window.onafterprint = function(){ window.close(); }; }<\/script>
-        </body>
-        </html>
-      `);
-      win.document.close();
+      if (nav) nav.style.display = '';
+      if (backBtn) backBtn.style.display = '';
+      if (printBtn) printBtn.style.display = '';
     }
 
     function closePreviewOverlay() {
