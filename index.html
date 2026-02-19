@@ -9193,20 +9193,20 @@
           const dayCols = dayCells.map(c => {
             const color = c.dayDeaths > 0 ? '#dc2626' : '#bbb';
             const weight = c.dayDeaths > 0 ? '700' : '400';
-            return `<td style="text-align:center;padding:3px 2px;border:1px solid #eee;">
-              <div style="font-size:13px;color:#aaa;">${c.dayLabel}</div>
-              <div style="font-size:22px;color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
+            return `<td style="text-align:center;padding:4px 3px;border:1px solid #eee;min-width:48px;">
+              <div style="font-size:11px;color:#aaa;white-space:nowrap;">${c.dayLabel}</div>
+              <div style="font-size:18px;color:${color};font-weight:${weight};">${c.dayDeaths > 0 ? c.dayDeaths : '—'}</div>
             </td>`;
           }).join('');
 
           tableRows += `<tr style="background:${rowBg};">
-            <td style="padding:2px 6px;border:1px solid #ddd;white-space:nowrap;font-weight:700;font-size:17px;background:#22c55e;color:#000;">
-              Wk ${w} <span style="font-size:13px;font-weight:400;color:#1a5c30;">${weekRange}</span>
+            <td style="padding:4px 8px;border:1px solid #ddd;white-space:nowrap;font-weight:700;font-size:14px;background:#22c55e;color:#000;min-width:110px;">
+              Wk ${w} <span style="font-size:11px;font-weight:400;color:#1a5c30;">${weekRange}</span>
             </td>
             ${dayCols}
-            <td style="text-align:center;padding:2px;border:1px solid #ddd;font-size:22px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};">${weekDeaths > 0 ? weekDeaths : '—'}</td>
-            <td style="text-align:center;padding:2px;border:1px solid #ddd;font-size:20px;color:#666;">${weekMortPct}</td>
-            <td style="text-align:center;padding:2px;border:1px solid #ddd;font-size:20px;color:#16a34a;">${livability}</td>
+            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:18px;font-weight:700;color:${weekDeaths>0?'#dc2626':'#aaa'};min-width:52px;">${weekDeaths > 0 ? weekDeaths : '—'}</td>
+            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:14px;color:#666;min-width:48px;">${weekMortPct}</td>
+            <td style="text-align:center;padding:4px;border:1px solid #ddd;font-size:14px;color:#16a34a;min-width:56px;">${livability}</td>
           </tr>`;
         }
 
@@ -9215,69 +9215,74 @@
         const totalDeadFromLogs = logs.reduce((s, l) => s + (l.deaths || 0), 0);
 
         return `
-          <div class="container">
-            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;padding:12px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+          <div class="container" style="padding:8px;">
+            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;padding:12px;overflow:hidden;">
+
+              <!-- Buttons -->
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;">
                 <button onclick="app.navigate('flock')" class="btn btn-secondary">← Back</button>
                 <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
               </div>
 
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #22c55e;padding-bottom:8px;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                <div>
-                  <div style="font-size:20px;font-weight:700;">${this.escapeHtml(farmName)}</div>
-                  <div style="font-size:15px;font-weight:600;color:#333;">21-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
-                  <div style="font-size:12px;color:#888;">Generated: ${now}</div>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;">
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px 13px;text-align:center;background:#f0fdf4;">
-                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Birds Placed</div>
-                    <div style="font-size:18px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
+              <!-- Header -->
+              <div style="border-bottom:3px solid #22c55e;padding-bottom:8px;margin-bottom:12px;">
+                <div style="font-size:18px;font-weight:700;">${this.escapeHtml(farmName)}</div>
+                <div style="font-size:13px;font-weight:600;color:#333;">21-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
+                <div style="font-size:11px;color:#888;margin-bottom:10px;">Generated: ${now}</div>
+                <!-- Stat boxes: 2 cols on mobile, 5 on desktop -->
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
+                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Birds Placed</div>
+                    <div style="font-size:16px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px 13px;text-align:center;background:#fef2f2;">
-                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Total Dead</div>
-                    <div style="font-size:18px;font-weight:700;color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fef2f2;">
+                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Total Dead</div>
+                    <div style="font-size:16px;font-weight:700;color:#dc2626;">${totalDeadFromLogs.toLocaleString()}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px 13px;text-align:center;background:#f0fdf4;">
-                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Birds Left</div>
-                    <div style="font-size:18px;font-weight:700;color:#16a34a;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;">
+                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Birds Left</div>
+                    <div style="font-size:16px;font-weight:700;color:#16a34a;">${placed > 0 ? (placed - totalDeadFromLogs).toLocaleString() : '—'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px 13px;text-align:center;background:#fffbeb;">
-                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Mortality %</div>
-                    <div style="font-size:18px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#fffbeb;">
+                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Mortality %</div>
+                    <div style="font-size:16px;font-weight:700;color:#d97706;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</div>
                   </div>
-                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px 13px;text-align:center;background:#f0fdf4;">
-                    <div style="font-size:11px;color:#666;text-transform:uppercase;">Livability</div>
-                    <div style="font-size:18px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
+                  <div style="border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;background:#f0fdf4;grid-column:span 2;">
+                    <div style="font-size:10px;color:#666;text-transform:uppercase;">Livability</div>
+                    <div style="font-size:16px;font-weight:700;color:#16a34a;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</div>
                   </div>
                 </div>
               </div>
 
-              <table class="mort-table" style="width:100%;border-collapse:collapse;font-size:16px;">
-                <thead>
-                  <tr style="background:#111;color:#fff;">
-                    <th style="padding:7px;border:1px solid #333;text-align:left;font-size:15px;">Week</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Sun</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Mon</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Tue</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Wed</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Thu</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Fri</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Sat</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Wk Dead</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Mort%</th>
-                    <th style="padding:7px;border:1px solid #333;text-align:center;font-size:15px;">Livability</th>
-                  </tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-                <tfoot>
-                  <tr style="background:#111;color:#fff;font-weight:700;">
-                    <td colspan="8" style="padding:6px 8px;border:1px solid #333;text-align:right;font-size:14px;">TOTALS</td>
-                    <td style="padding:6px;border:1px solid #333;text-align:center;color:#ef4444;font-size:16px;">${totalDeadFromLogs}</td>
-                    <td style="padding:6px;border:1px solid #333;text-align:center;color:#ef4444;font-size:16px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</td>
-                    <td style="padding:6px;border:1px solid #333;text-align:center;color:#22c55e;font-size:16px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
-                  </tr>
-                </tfoot>
-              </table>
+              <!-- Scrollable table wrapper -->
+              <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;">
+                <table class="mort-table" style="min-width:700px;width:100%;border-collapse:collapse;font-size:13px;">
+                  <thead>
+                    <tr style="background:#111;color:#fff;">
+                      <th style="padding:6px 8px;border:1px solid #333;text-align:left;font-size:12px;white-space:nowrap;">Week</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Sun</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Mon</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Tue</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Wed</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Thu</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Fri</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Sat</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Wk Dead</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Mort%</th>
+                      <th style="padding:6px 4px;border:1px solid #333;text-align:center;font-size:12px;">Livability</th>
+                    </tr>
+                  </thead>
+                  <tbody>${tableRows}</tbody>
+                  <tfoot>
+                    <tr style="background:#111;color:#fff;font-weight:700;">
+                      <td colspan="8" style="padding:5px 8px;border:1px solid #333;text-align:right;font-size:11px;">TOTALS</td>
+                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#ef4444;font-size:13px;">${totalDeadFromLogs}</td>
+                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#ef4444;font-size:13px;">${totalMortPct === 'N/A' ? 'N/A' : totalMortPct + '%'}</td>
+                      <td style="padding:5px;border:1px solid #333;text-align:center;color:#22c55e;font-size:13px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
 
               <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
                 FlockPro v${this.appVersion} · ${this.escapeHtml(farmName)} · Flock #${this.escapeHtml(String(flockId))} · ${now}
