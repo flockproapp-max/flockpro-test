@@ -11341,8 +11341,8 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isIOS) { showIOSPrintModal(); return; }
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) { showMobilePrintModal(); return; }
       closePreviewOverlay();
       app.openMortalityReport();
       setTimeout(function() {
@@ -11359,97 +11359,66 @@ Current data will be REPLACED. Are you sure?`,
       }, 1500);
     }
 
-    function showIOSPrintModal() {
-      const existing = document.getElementById('iosPrintModal');
+    function showMobilePrintModal() {
+      const existing = document.getElementById('mobilePrintModal');
       if (existing) existing.remove();
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const step1 = isIOS
+        ? 'Tap the <strong style="color:#fff;">Share</strong> button (box with arrow) at the bottom of Safari'
+        : 'Tap the <strong style="color:#fff;">⋮ Menu</strong> button in the top-right of Chrome';
+      const step2 = isIOS
+        ? 'Scroll down and tap <strong style="color:#fff;">Print</strong>'
+        : 'Tap <strong style="color:#fff;">Print...</strong> in the menu';
       const modal = document.createElement('div');
-      modal.id = 'iosPrintModal';
+      modal.id = 'mobilePrintModal';
       modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
       modal.innerHTML = `
         <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Arial,sans-serif;">
           <div style="font-size:44px;margin-bottom:12px;">🖨️</div>
           <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">How to Print</div>
-          <div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.6;">To print from iPhone, use Safari's built-in print option:</div>
+          <div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.6;">Use your browser's built-in print option:</div>
           <div style="text-align:left;background:#111;border-radius:10px;padding:16px;margin-bottom:20px;">
             <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
               <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">1</div>
-              <div style="color:#ddd;font-size:13px;line-height:1.5;">Tap the <strong style="color:#fff;">Share</strong> button at the bottom of Safari</div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">${step1}</div>
             </div>
             <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
               <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">2</div>
-              <div style="color:#ddd;font-size:13px;line-height:1.5;">Scroll down and tap <strong style="color:#fff;">Print</strong></div>
+              <div style="color:#ddd;font-size:13px;line-height:1.5;">${step2}</div>
             </div>
             <div style="display:flex;align-items:flex-start;gap:12px;">
               <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">3</div>
               <div style="color:#ddd;font-size:13px;line-height:1.5;">Select your printer and print</div>
             </div>
           </div>
-          <button onclick="document.getElementById('iosPrintModal').remove()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:10px;padding:14px 0;font-size:16px;width:100%;-webkit-appearance:none;cursor:pointer;">Got it</button>
+          <button onclick="document.getElementById('mobilePrintModal').remove()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:10px;padding:14px 0;font-size:16px;width:100%;-webkit-appearance:none;cursor:pointer;">Got it</button>
         </div>`;
       document.body.appendChild(modal);
       modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
     }
 
-    function smartPrint() {
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Keep old name as alias so any other callers still work
+    function showIOSPrintModal() { showMobilePrintModal(); }
 
-      if (isIOS) {
-        showIOSPrintModal();
+    function smartPrint() {
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        showMobilePrintModal();
         return;
       }
-
-      // Desktop / Android
+      // Desktop
       const nav = document.querySelector('.top-nav');
       const backBtn = document.querySelector('.container .btn-secondary');
       const printBtn = document.querySelector('.container .btn-primary');
       if (nav) nav.style.display = 'none';
       if (backBtn) backBtn.style.display = 'none';
       if (printBtn) printBtn.style.display = 'none';
-      window.print();
-      if (nav) nav.style.display = '';
-      if (backBtn) backBtn.style.display = '';
-      if (printBtn) printBtn.style.display = '';
-    }
-
-    function showIOSPrintModal() {
-      const existing = document.getElementById('iosPrintModal');
-      if (existing) existing.remove();
-
-      const modal = document.createElement('div');
-      modal.id = 'iosPrintModal';
-      modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
-
-      modal.innerHTML = `
-        <div style="background:#1a1a1a;border:1px solid #333;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;font-family:Arial,sans-serif;">
-          <div style="font-size:44px;margin-bottom:12px;">🖨️</div>
-          <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">How to Print</div>
-          <div style="font-size:13px;color:#aaa;margin-bottom:20px;line-height:1.6;">
-            To print from iPhone, use Safari's built-in print option:
-          </div>
-          <div style="text-align:left;background:#111;border-radius:10px;padding:16px;margin-bottom:20px;">
-            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
-              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">1</div>
-              <div style="color:#ddd;font-size:13px;line-height:1.5;">Tap the <strong style="color:#fff;">Share</strong> button at the bottom of Safari</div>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
-              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">2</div>
-              <div style="color:#ddd;font-size:13px;line-height:1.5;">Scroll down and tap <strong style="color:#fff;">Print</strong></div>
-            </div>
-            <div style="display:flex;align-items:flex-start;gap:12px;">
-              <div style="background:#22c55e;color:#000;font-weight:700;border-radius:50%;min-width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">3</div>
-              <div style="color:#ddd;font-size:13px;line-height:1.5;">Select your printer and print</div>
-            </div>
-          </div>
-          <button onclick="document.getElementById('iosPrintModal').remove()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:10px;padding:14px 0;font-size:16px;width:100%;-webkit-appearance:none;cursor:pointer;">
-            Got it
-          </button>
-        </div>
-      `;
-
-      document.body.appendChild(modal);
-      modal.addEventListener('click', function(e) {
-        if (e.target === modal) modal.remove();
-      });
+      setTimeout(function() {
+        window.print();
+        if (nav) nav.style.display = '';
+        if (backBtn) backBtn.style.display = '';
+        if (printBtn) printBtn.style.display = '';
+      }, 300);
     }
 
     function closePreviewOverlay() {
