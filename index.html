@@ -11345,8 +11345,7 @@ Current data will be REPLACED. Are you sure?`,
       if (isIOS) { showMobilePrintModal(); return; }
       closePreviewOverlay();
       app.openMortalityReport();
-      // CSS @media print hides nav/buttons — just call print after view loads
-      setTimeout(function() { window.print(); }, 1500);
+      setTimeout(function() { smartPrint(); }, 1500);
     }
 
     function showMobilePrintModal() {
@@ -11392,11 +11391,33 @@ Current data will be REPLACED. Are you sure?`,
 
     function smartPrint() {
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      if (isIOS) {
-        showMobilePrintModal();
+      if (isIOS) { showMobilePrintModal(); return; }
+
+      // Android PWA (installed to home screen) blocks window.print().
+      // Work around by grabbing the report HTML and opening it in a new
+      // browser tab, which is a normal context where print works fine.
+      const isAndroidPWA = /Android/i.test(navigator.userAgent) &&
+        window.matchMedia('(display-mode: standalone)').matches;
+
+      if (isAndroidPWA) {
+        const reportCard = document.querySelector('.container .modern-card');
+        const html = reportCard ? reportCard.innerHTML : document.body.innerHTML;
+        const win = window.open('about:blank', '_blank');
+        if (win) {
+          win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8">' +
+            '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<title>FlockPro Report</title>' +
+            '<style>body{font-family:Arial,sans-serif;background:#fff;color:#111;margin:0;padding:16px;}' +
+            'button{display:none!important;}</style>' +
+            '</head><body>' + html +
+            '<script>setTimeout(function(){window.print();},600);<\/script>' +
+            '</body></html>');
+          win.document.close();
+        }
         return;
       }
-      // Desktop + Android: CSS @media print already hides nav/buttons, no JS needed
+
+      // Desktop / Android browser (not installed PWA)
       window.print();
     }
 
