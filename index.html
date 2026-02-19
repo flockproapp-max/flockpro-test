@@ -3789,56 +3789,6 @@
         page-break-inside: avoid;
       }
     }
-
-    /* ===== MORTALITY REPORT 22-WEEK FIT ===== */
-    @media print {
-      @page { size: letter portrait; margin: 0.2in; }
-
-      /* Allow the mortality report card to break across pages if needed,
-         but scale everything down so all 22 weeks fit on ONE page */
-      .modern-card {
-        page-break-inside: auto !important;
-      }
-
-      /* Target the mortality week table rows - make them compact */
-      .modern-card table tr td table {
-        font-size: 7px !important;
-      }
-      .modern-card table tr td table td {
-        padding: 1px !important;
-        font-size: 7px !important;
-        min-width: 0 !important;
-      }
-      .modern-card table tr td table td > div {
-        font-size: 6px !important;
-        line-height: 1.1 !important;
-      }
-      /* Week header rows */
-      .modern-card table tr td table tr[style*="background:#22c55e"] td {
-        padding: 1px 4px !important;
-        font-size: 8px !important;
-      }
-      /* Totals rows */
-      .modern-card table tr td table tr[style*="background:#f8f8f8"] td {
-        padding: 1px 4px !important;
-      }
-
-      /* Shrink the summary stats boxes at top */
-      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] {
-        gap: 4px !important;
-        margin-bottom: 6px !important;
-      }
-      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div {
-        padding: 4px !important;
-      }
-      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div > div:last-child {
-        font-size: 12px !important;
-      }
-      .modern-card div[style*="grid-template-columns:repeat(2,1fr)"] > div > div:first-child {
-        font-size: 7px !important;
-      }
-    }
-    /* ===== END MORTALITY REPORT 22-WEEK FIT ===== */
     
     /* Global Select Dropdown Styling */
     select {
@@ -11605,6 +11555,36 @@ Current data will be REPLACED. Are you sure?`,
 
     // Initialize app
     const app = new FlockProApp();
+
+    // ===== ZOOM SCROLL FIX =====
+    // When user pinch-zooms on mobile, expand #app so content at
+    // top/bottom edges remains reachable by scrolling
+    (function() {
+      const appEl = document.getElementById('app');
+      if (!appEl || !window.visualViewport) return;
+
+      function onViewportChange() {
+        const vv = window.visualViewport;
+        const scale = vv.scale || 1;
+        if (scale <= 1) {
+          // Not zoomed - restore normal layout
+          appEl.style.top = '0';
+          appEl.style.bottom = '0';
+          appEl.style.height = '';
+          appEl.style.paddingTop = '';
+          appEl.style.paddingBottom = '';
+        } else {
+          // Zoomed in - allow scrolling to top/bottom by adding padding
+          const extraPad = Math.round(vv.height * (scale - 1) * 0.5);
+          appEl.style.paddingTop = extraPad + 'px';
+          appEl.style.paddingBottom = extraPad + 'px';
+        }
+      }
+
+      window.visualViewport.addEventListener('resize', onViewportChange);
+      window.visualViewport.addEventListener('scroll', onViewportChange);
+    })();
+    // ===== END ZOOM SCROLL FIX =====
   </script>
   </div> <!-- End of #app wrapper -->
 </body>
