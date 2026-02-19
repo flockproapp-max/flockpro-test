@@ -730,6 +730,11 @@
       h2 { page-break-after: avoid !important; font-size: 12px !important; }
       /* Hide old overlay */
       #printPreviewOverlay { display: none !important; }
+      /* Mortality sheet - fit everything on one page */
+      @page { size: landscape; margin: 0.1in; }
+      .mort-wrap {
+        zoom: 47%;
+      }
     }
     /* ===== END PRINT PREVIEW ===== */
 
@@ -7317,7 +7322,7 @@
           <div class="container">
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
               <button onclick="app.undo()" class="btn btn-secondary" ${this.undoStack.length === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>↶ Undo</button>
-              <button onclick="app.openReportView('flock')" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">📄 Report</button>
+              <button onclick="app.openReportView('flock')" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Preview</button>
             </div>
 
             <!-- Flock Tab Switcher -->
@@ -7717,17 +7722,24 @@
           <div class="arduino-card" style="background:#111 !important; border-color:#2a2a2a !important; color:#fff !important;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
               <h3 style="margin:0; color:#fff !important;">📅 Daily Log — Flock #${this.escapeHtml(String(this.currentFlock.id))}</h3>
-              <button onclick="app.loadDailyLogs().then(()=>{ app.currentView='mortality'; app.render(); })" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
+              <button onclick="showMortalitySheet()" style="background:#22c55e; color:#000; font-weight:700; border:none; border-radius:8px; padding:10px 18px; font-size:0.95em; cursor:pointer;">🖨️ Mortality Sheet</button>
             </div>
 
             <!-- Bird Stats Bar -->
             ${started === 0 ? `
-            <div style="background:#7f1d1d; border:1px solid #ef4444; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fca5a5; font-size:0.85em;">
-              ⚠️ <b>Birds Placed is not set.</b> Go to <b>Flock Data</b> tab and enter the number of birds placed so totals calculate correctly.
+            <div style="background:#7f1d1d; border:1px solid #ef4444; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fca5a5; font-size:0.85em; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <span>⚠️ <b>Birds Placed is not set.</b> Enter the number of birds placed so totals calculate correctly.</span>
+              <button onclick="app.flockTab='data'; app.render(); setTimeout(()=>{const el=document.querySelector('input[name=placed]');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}},100);" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:0.85em;font-weight:700;cursor:pointer;white-space:nowrap;">Set it now →</button>
             </div>` : ''}
             ${this.currentFlock.birdsLeftSource !== 'daily' ? `
-            <div style="background:#713f12; border:1px solid #f59e0b; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fde68a; font-size:0.85em;">
-              ⚠️ <b>Daily Log is not controlling Birds Left.</b> Go to <b>Flock Data</b> tab and turn on <b>Daily Log controls this</b> so deaths are tracked automatically.
+            <div style="background:#713f12; border:1px solid #f59e0b; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fde68a; font-size:0.85em; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <span>⚠️ <b>Daily Log is not controlling Birds Left.</b> Deaths won't be tracked automatically.</span>
+              <button onclick="app.flockTab='data'; app.render(); setTimeout(()=>{const el=document.querySelector('input[name=shipped]');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});}},100);" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:0.85em;font-weight:700;cursor:pointer;white-space:nowrap;">Go to setting →</button>
+            </div>` : ''}
+            ${!this.currentFlock.startedDate ? `
+            <div style="background:#713f12; border:1px solid #f59e0b; border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#fde68a; font-size:0.85em; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <span>⚠️ <b>No start date set on this flock.</b> Set the Started Date to show real dates and match daily log entries.</span>
+              <button onclick="app.flockTab='data'; app.render(); setTimeout(()=>{const el=document.querySelector('input[name=startedDate]');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}},100);" style="background:#f59e0b;color:#000;border:none;border-radius:8px;padding:6px 12px;font-size:0.85em;font-weight:700;cursor:pointer;white-space:nowrap;">Go to setting →</button>
             </div>` : ''}
             <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px;">
               <div style="background:#1a1a1a; border-radius:10px; padding:12px; text-align:center; border:1px solid ${started===0?'#ef4444':'#2a2a2a'};">
@@ -7944,11 +7956,8 @@
         const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
         const farmName = (this.settings && this.settings.farmName) ? this.settings.farmName : 'Farm';
 
-        // Warn if no start date
-        const noDateWarning = !base ? `
-          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px;margin-bottom:16px;color:#92400e;font-size:13px;">
-            ⚠️ No start date set on this flock. Go to <b>Flock Data</b> and set the <b>Started Date</b> to show real dates and match daily log entries.
-          </div>` : '';
+        // Warn if no start date (removed from mortality sheet - shown in Daily Log instead)
+        const noDateWarning = '';
 
         const deathsByDate = {};
         logs.forEach(l => { if (l.date) deathsByDate[l.date] = (deathsByDate[l.date] || 0) + (l.deaths || 0); });
@@ -8032,7 +8041,7 @@
             <div style="background:#1a1a1a;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;flex-wrap:wrap;">
               <span style="color:#22c55e;font-weight:700;font-size:0.95em;">🖨️ Mortality Sheet — Flock #${this.escapeHtml(String(flock.id))}</span>
               <div style="display:flex;gap:8px;">
-                <button onclick="app.openMortalityReport()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
+                <button onclick="window.print()" style="background:#22c55e;color:#000;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">🖨️ Print</button>
                 <button onclick="app.currentView='flock'; app.flockTab='daily'; app.render();" style="background:#444;color:#fff;font-weight:700;border:none;border-radius:8px;padding:8px 16px;font-size:0.9em;cursor:pointer;">✕ Close</button>
               </div>
             </div>
