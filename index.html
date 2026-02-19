@@ -748,6 +748,45 @@
       .btn { display: none !important; }
     }
 
+    /* ===== MORTALITY REPORT MOBILE ===== */
+    .mort-table-scroll {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* When showing mortality report, allow #app to scroll horizontally too */
+    body.mort-report-active #app {
+      overflow-x: auto;
+    }
+    @media (max-width: 768px) {
+      .mort-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      .mort-stats-grid > div:last-child {
+        grid-column: 1 / -1;
+      }
+      .mort-table-scroll {
+        overflow-x: auto;
+      }
+      /* Shrink table cells slightly on small screens */
+      .mort-table td, .mort-table th {
+        font-size: 12px !important;
+        padding: 3px 2px !important;
+      }
+      .mort-table td div {
+        font-size: 12px !important;
+      }
+    }
+    @media print {
+      .mort-table-scroll {
+        overflow: visible !important;
+      }
+      body.mort-report-active #app {
+        overflow: visible !important;
+      }
+    }
+    /* ===== END MORTALITY REPORT MOBILE ===== */
+
     /* ===== FLOCK TAB SWITCHER ===== */
     .flock-tabs {
       display: flex;
@@ -6308,6 +6347,9 @@
           this.startUpdateChecker();
         }
 
+        // Toggle body class for mortality report (enables horizontal scroll)
+        document.body.classList.toggle('mort-report-active', this.currentView === 'mortality-report');
+
         let content = this.renderTopNav();
         
         switch(this.currentView) {
@@ -9439,7 +9481,7 @@
                   <div style="font-size:12px;font-weight:600;color:#333;">21-Week Mortality Sheet — Flock #${this.escapeHtml(String(flockId))}</div>
                   <div style="font-size:10px;color:#888;">Generated: ${now}</div>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+                <div class="mort-stats-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
                   <div style="border:1px solid #ddd;border-radius:6px;padding:6px 10px;text-align:center;background:#f0fdf4;">
                     <div style="font-size:9px;color:#666;text-transform:uppercase;">Birds Placed</div>
                     <div style="font-size:14px;font-weight:700;color:${placed>0?'#111':'#dc2626'};">${placed > 0 ? placed.toLocaleString() : '⚠️'}</div>
@@ -9463,7 +9505,7 @@
                 </div>
               </div>
 
-              <table style="width:100%;border-collapse:collapse;font-size:18px;">
+              <div class="mort-table-scroll"><table class="mort-table" style="width:100%;border-collapse:collapse;font-size:18px;">
                 <thead>
                   <tr style="background:#111;color:#fff;">
                     <th style="padding:6px;border:1px solid #333;text-align:left;font-size:18px;">Week</th>
@@ -9488,7 +9530,7 @@
                     <td style="padding:4px;border:1px solid #333;text-align:center;color:#22c55e;font-size:14px;">${finalLivability === 'N/A' ? 'N/A' : finalLivability + '%'}</td>
                   </tr>
                 </tfoot>
-              </table>
+              </table></div>
 
               <div style="margin-top:8px;font-size:9px;color:#999;text-align:center;">
                 FlockPro v${this.appVersion} · ${this.escapeHtml(farmName)} · Flock #${this.escapeHtml(String(flockId))} · ${now}
