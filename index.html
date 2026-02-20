@@ -587,6 +587,32 @@
     #printPreviewOverlay.active {
       display: block;
     }
+    #printPreviewFooter {
+      position: sticky;
+      bottom: 0;
+      z-index: 100000;
+      background: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.5);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #printPreviewFooter button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 24px;
+      font-size: 0.9em;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    #printPreviewFooter .btn-print-bottom { background: #22c55e; color: #000; }
+    #printPreviewFooter .btn-close-bottom { background: #444; color: #fff; }
+    @media print { #printPreviewFooter { display: none !important; } }
     #printPreviewToolbar {
       position: sticky;
       top: 0;
@@ -3874,6 +3900,10 @@
       </div>
     </div>
     <div id="printPreviewBody"></div>
+    <div id="printPreviewFooter">
+      <button class="btn-print-bottom" onclick="printMortalitySheet()">🖨️ Print Now</button>
+      <button class="btn-close-bottom" onclick="closePreviewOverlay()">✕ Close</button>
+    </div>
   </div>
   <!-- END PRINT PREVIEW -->
 
