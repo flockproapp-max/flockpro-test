@@ -781,11 +781,21 @@
     .mort-table-scroll {
       width: 100%;
       overflow-x: auto;
+      overflow-y: visible;
       -webkit-overflow-scrolling: touch;
+      /* iOS: give the scroll container its own stacking context so it
+         can scroll independently without the whole page shifting */
+      transform: translateZ(0);
+      max-width: 100vw;
     }
-    /* When showing mortality report, allow #app to scroll horizontally too */
+    /* Keep #app from scrolling horizontally - .mort-table-scroll handles it */
     body.mort-report-active #app {
-      overflow-x: auto;
+      overflow-x: hidden;
+    }
+    /* Prevent body from being draggable sideways on iOS */
+    body.mort-report-active {
+      overflow-x: hidden;
+      max-width: 100vw;
     }
     @media (max-width: 768px) {
       .mort-stats-grid {
