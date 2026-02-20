@@ -9961,8 +9961,8 @@
       }
 
       openMortalityReport() {
-        if (!this.currentFlock) return;
-        this.loadDailyLogs().then(() => {
+        if (!this.currentFlock) return Promise.resolve();
+        return this.loadDailyLogs().then(() => {
           this.currentView = 'mortality-report';
           this.render();
         }).catch(() => {
@@ -11490,43 +11490,13 @@ Current data will be REPLACED. Are you sure?`,
 
     function printMortalitySheet() {
       closePreviewOverlay();
-      app.openMortalityReport();
-      setTimeout(function() {
-        // Auto-scale the mortality table to fill the page on any device
-        const card = document.querySelector('.mort-report-active .modern-card');
-        if (card) {
-          const table = card.querySelector('table.mort-table');
-          if (table) {
-            // Reset to natural size first
-            table.style.fontSize = '';
-            const tableH = table.offsetHeight;
-            const cardH = card.offsetHeight;
-            // Available print height (landscape A4/Letter ~540px at 96dpi)
-            const availH = window.innerHeight * 0.85;
-            if (tableH > 0 && tableH < availH * 0.7) {
-              // Table is using less than 70% of page - scale up
-              const scale = Math.min((availH / tableH) * 0.92, 2.0);
-              const basePt = 12;
-              const newPt = Math.round(basePt * scale * 10) / 10;
-              table.style.fontSize = newPt + 'pt';
-              // Also scale td/th
-              table.querySelectorAll('td, th').forEach(el => {
-                el.style.fontSize = newPt + 'pt';
-                el.style.padding = Math.round(newPt * 0.35) + 'pt ' + Math.round(newPt * 0.2) + 'pt';
-              });
-            }
-          }
-        }
-        window.print();
-        // Reset after print
-        setTimeout(() => {
-          const t = document.querySelector('.mort-report-active table.mort-table');
-          if (t) {
-            t.style.fontSize = '';
-            t.querySelectorAll('td, th').forEach(el => { el.style.fontSize = ''; el.style.padding = ''; });
-          }
-        }, 2000);
-      }, 1500);
+      const promise = app.openMortalityReport() || Promise.resolve();
+      promise.then(function() {
+        // Give the DOM a moment to fully render after the view switch
+        setTimeout(function() {
+          window.print();
+        }, 300);
+      });
     }
 
     function smartPrint() {
