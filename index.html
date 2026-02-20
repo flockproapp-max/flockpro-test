@@ -4674,12 +4674,15 @@
       async saveUserPin() {
         if (!this.user || !this.pin) return;
         try {
-          await db.collection('users').doc(this.user.uid).update({
-            hasPin: true
-          });
+          // Store a SHA256 hash of the PIN for direct verification
+          const pinHash = CryptoJS.SHA256(this.pin + '_FLOCKPRO').toString();
+          await db.collection('users').doc(this.user.uid).set({
+            hasPin: true,
+            pinHash: pinHash
+          }, { merge: true });
         } catch (error) {
           console.error('Error saving user PIN status:', error);
-          throw error; // Re-throw so caller knows it failed
+          throw error;
         }
       }
 
@@ -4964,8 +4967,9 @@
           
           await batch.commit();
           
-          // Update the PIN
+          // Update the PIN in memory and save new pinHash to Firestore
           this.pin = newPin;
+          await this.saveUserPin();
           
           modal.remove();
           this.showToast('PIN changed successfully!');
@@ -7288,26 +7292,74 @@
         }
         
         const enteredPin = pin1 + pin2 + pin3 + pin4;
-        
-        // Try to decrypt a test flock to verify PIN
-        const testFlocks = await db.collection('users').doc(this.user.uid).collection('flocks').limit(1).get();
-        
-        if (!testFlocks.empty) {
-          const testFlock = testFlocks.docs[0].data();
-          // Try to decrypt the revenue field (it should be encrypted)
-          if (testFlock.revenue && typeof testFlock.revenue === 'string') {
-            const decrypted = this.decrypt(testFlock.revenue, enteredPin);
-            if (decrypted === null) {
+
+        const clearError = () => {
+          document.getElementById('pin1').value = '';
+          document.getElementById('pin2').value = '';
+          document.getElementById('pin3').value = '';
+          document.getElementById('pin4').value = '';
+          document.getElementById('pin1').focus();
+        };
+
+        // Load user doc to get pinHash
+        const userDoc = await db.collection('users').doc(this.user.uid).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+
+        // PRIMARY: verify against stored pinHash
+        if (userData.pinHash) {
+          const enteredHash = CryptoJS.SHA256(enteredPin + '_FLOCKPRO').toString();
+          if (enteredHash === userData.pinHash) {
+            // Hash matches - correct PIN, proceed
+          } else {
+            // Hash mismatch - check if it's a valid SHA256 hash (64 hex chars) - if so truly wrong PIN
+            if (/^[a-f0-9]{64}$/.test(userData.pinHash)) {
               document.getElementById('pinError').textContent = 'Incorrect PIN';
-              // Clear inputs
-              document.getElementById('pin1').value = '';
-              document.getElementById('pin2').value = '';
-              document.getElementById('pin3').value = '';
-              document.getElementById('pin4').value = '';
-              document.getElementById('pin1').focus();
+              clearError();
               return;
             }
+            // Otherwise old format - fall through to flock-based verification
+            delete userData.pinHash;
           }
+        }
+        
+        if (!userData.pinHash) {
+          // FALLBACK for existing users without pinHash: try decrypting any encrypted field
+          const testFlocks = await db.collection('users').doc(this.user.uid).collection('flocks').limit(5).get();
+          const encryptedFields = ['revenue', 'fCost', 'pCost', 'placed', 'shipped', 'weight', 'pricePerLb', 'meds', 'notes'];
+          let verified = false;
+          let hasEncryptedData = false;
+
+          if (!testFlocks.empty) {
+            outer: for (const doc of testFlocks.docs) {
+              const data = doc.data();
+              for (const field of encryptedFields) {
+                if (data[field] && typeof data[field] === 'string') {
+                  hasEncryptedData = true;
+                  const decrypted = this.decrypt(data[field], enteredPin);
+                  if (decrypted !== null) {
+                    verified = true;
+                    break outer;
+                  }
+                }
+              }
+            }
+          }
+
+          if (hasEncryptedData && !verified) {
+            document.getElementById('pinError').textContent = 'Incorrect PIN';
+            clearError();
+            return;
+          }
+
+          if (!hasEncryptedData) {
+            document.getElementById('pinError').textContent = 'Cannot verify PIN. Please sign out and set up your PIN again.';
+            clearError();
+            return;
+          }
+
+          // Fallback succeeded — save pinHash now so future logins use it
+          this.pin = enteredPin;
+          await this.saveUserPin();
         }
         
         // PIN is correct
@@ -7317,28 +7369,22 @@
         // Save session for navigation protection
         this.navProtection.saveSession(this.pin, this.user.uid, this.user.email);
         
-        // Reload farm name AND CHECK ACCOUNT STATUS
-        const userDoc = await db.collection('users').doc(this.user.uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          this.farmName = userData.farmName || '';
-          
-          // CHECK FREEZE STATUS AFTER PIN UNLOCK
-          const accountStatus = userData.status || 'active';
-          
-          if (accountStatus === 'suspended') {
-            auth.signOut();
-            this.suspendedAccount = true;
-            this.render();
-            return;
-          }
-          
-          if (accountStatus === 'frozen') {
-            this.accountFrozen = true;
-            this.showToast('⚠️ Your account is frozen - Read-only mode active', 'warning');
-          } else {
-            this.accountFrozen = false;
-          }
+        // Check account status
+        this.farmName = userData.farmName || '';
+        const accountStatus = userData.status || 'active';
+        
+        if (accountStatus === 'suspended') {
+          auth.signOut();
+          this.suspendedAccount = true;
+          this.render();
+          return;
+        }
+        
+        if (accountStatus === 'frozen') {
+          this.accountFrozen = true;
+          this.showToast('⚠️ Your account is frozen - Read-only mode active', 'warning');
+        } else {
+          this.accountFrozen = false;
         }
         
         // Load the app
