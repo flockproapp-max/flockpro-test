@@ -577,20 +577,22 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: scroll;
+      overflow-y: auto;
       overflow-x: auto;
-      overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
-      touch-action: pan-x pan-y pinch-zoom;
+      touch-action: pan-y pan-x;
       box-sizing: border-box;
+      /* Do NOT use overscroll-behavior:contain — it traps users on mobile */
     }
     #printPreviewOverlay.active {
       display: block;
     }
     #printPreviewFooter {
-      position: sticky;
+      position: fixed;
       bottom: 0;
-      z-index: 100000;
+      left: 0;
+      right: 0;
+      z-index: 100001;
       background: #1a1a1a;
       display: flex;
       align-items: center;
@@ -599,7 +601,6 @@
       padding: 10px 16px;
       padding-bottom: max(10px, env(safe-area-inset-bottom));
       box-shadow: 0 -2px 8px rgba(0,0,0,0.5);
-      width: 100%;
       box-sizing: border-box;
     }
     #printPreviewFooter button {
@@ -667,7 +668,7 @@
       background: white;
       border-radius: 8px;
       padding: 16px;
-      padding-bottom: 120px; /* prevent content being flush at bottom when zoomed on mobile */
+      padding-bottom: 160px; /* space for fixed footer bar + safe area */
       color: #111;
       font-family: Arial, sans-serif;
       font-size: 14px;
