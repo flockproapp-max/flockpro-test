@@ -814,51 +814,55 @@
         overflow: visible !important;
       }
 
-      /* ---- Mortality report: fit all 21 weeks on ONE landscape page ---- */
-      @page { size: landscape; margin: 0.15in; }
+      /* ---- Mortality report: fill the FULL landscape page ---- */
+      @page { size: landscape; margin: 0.2in; }
       body.mort-report-active .top-nav,
       body.mort-report-active .btn,
       body.mort-report-active button {
         display: none !important;
       }
+      body.mort-report-active #app {
+        height: auto !important;
+        overflow: visible !important;
+        position: static !important;
+      }
       body.mort-report-active .container {
         padding: 0 !important;
         margin: 0 !important;
         max-width: 100% !important;
+        height: auto !important;
       }
       body.mort-report-active .modern-card {
-        padding: 4px !important;
+        padding: 2px !important;
         margin: 0 !important;
         box-shadow: none !important;
         border: none !important;
+        height: auto !important;
       }
-      /* Shrink the header section */
+      /* Compact header stats */
       body.mort-report-active .mort-stats-grid {
         gap: 3px !important;
       }
       body.mort-report-active .mort-stats-grid > div {
         padding: 2px 4px !important;
       }
-      body.mort-report-active .mort-stats-grid div[style] {
-        font-size: 8px !important;
-      }
-      /* Shrink the table aggressively */
+      /* Scale the whole card to fill the page */
       body.mort-report-active table.mort-table {
-        font-size: 9px !important;
+        font-size: 12pt !important;
         width: 100% !important;
       }
       body.mort-report-active table.mort-table th {
-        font-size: 9px !important;
-        padding: 2px 3px !important;
+        font-size: 12pt !important;
+        padding: 4.5pt 3pt !important;
       }
       body.mort-report-active table.mort-table td {
-        font-size: 9px !important;
-        padding: 1px 2px !important;
-        line-height: 1.2 !important;
+        font-size: 12pt !important;
+        padding: 4pt 2pt !important;
+        line-height: 1.4 !important;
       }
       body.mort-report-active table.mort-table td div {
-        font-size: 9px !important;
-        line-height: 1.2 !important;
+        font-size: 12pt !important;
+        line-height: 1.4 !important;
       }
       body.mort-report-active .mort-table-scroll {
         overflow: visible !important;
