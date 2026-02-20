@@ -4223,6 +4223,9 @@
         }, { passive: false });
         
         document.addEventListener('touchmove', (e) => {
+          // Never block scroll when the print overlay is open
+          const overlay = document.getElementById('printPreviewOverlay');
+          if (overlay && overlay.classList.contains('active')) return;
           const app = document.getElementById('app');
           const y = e.touches[0].pageY;
           if (app && app.scrollTop === 0 && y > startY) {
