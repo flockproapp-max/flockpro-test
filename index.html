@@ -11489,14 +11489,51 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      closePreviewOverlay();
-      const promise = app.openMortalityReport() || Promise.resolve();
-      promise.then(function() {
-        // Give the DOM a moment to fully render after the view switch
-        setTimeout(function() {
-          window.print();
-        }, 300);
-      });
+      const body = document.getElementById('printPreviewBody');
+      if (!body) return;
+
+      // Grab the inner HTML of the overlay content
+      const html = body.innerHTML;
+
+      // Open a new window, write the content, and print it
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: white; color: #111; }
+  @page { size: landscape; margin: 0.2in; }
+  @media print {
+    body { margin: 0; }
+  }
+  /* Mort wrap styles */
+  .mort-wrap { padding: 6px; }
+  .mort-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #22c55e; padding-bottom: 6px; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+  .mort-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  /* Make table fill full page height */
+  .mort-table-scroll { width: 100%; overflow: visible; }
+  table { width: 100%; border-collapse: collapse; }
+  /* Use vh to scale rows to fill the page */
+  table th { font-size: 1.6vh; padding: 0.8vh 0.5vw; border: 1px solid #333; background: #111; color: #fff; text-align: center; }
+  table th:first-child { text-align: left; }
+  table td { font-size: 1.6vh; padding: 0.7vh 0.4vw; border: 1px solid #eee; text-align: center; }
+  table td div { font-size: 1.5vh; }
+  tfoot td { background: #111 !important; color: #fff !important; font-weight: 700; }
+</style>
+</head>
+<body>
+${html}
+</body>
+</html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(function() {
+        win.print();
+        setTimeout(function() { win.close(); }, 1000);
+      }, 500);
     }
 
     function smartPrint() {
