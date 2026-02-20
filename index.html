@@ -813,6 +813,56 @@
       body.mort-report-active #app {
         overflow: visible !important;
       }
+
+      /* ---- Mortality report: fit all 21 weeks on ONE landscape page ---- */
+      @page { size: landscape; margin: 0.15in; }
+      body.mort-report-active .top-nav,
+      body.mort-report-active .btn,
+      body.mort-report-active button {
+        display: none !important;
+      }
+      body.mort-report-active .container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+      }
+      body.mort-report-active .modern-card {
+        padding: 4px !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
+      /* Shrink the header section */
+      body.mort-report-active .mort-stats-grid {
+        gap: 3px !important;
+      }
+      body.mort-report-active .mort-stats-grid > div {
+        padding: 2px 4px !important;
+      }
+      body.mort-report-active .mort-stats-grid div[style] {
+        font-size: 8px !important;
+      }
+      /* Shrink the table aggressively */
+      body.mort-report-active table.mort-table {
+        font-size: 9px !important;
+        width: 100% !important;
+      }
+      body.mort-report-active table.mort-table th {
+        font-size: 9px !important;
+        padding: 2px 3px !important;
+      }
+      body.mort-report-active table.mort-table td {
+        font-size: 9px !important;
+        padding: 1px 2px !important;
+        line-height: 1.2 !important;
+      }
+      body.mort-report-active table.mort-table td div {
+        font-size: 9px !important;
+        line-height: 1.2 !important;
+      }
+      body.mort-report-active .mort-table-scroll {
+        overflow: visible !important;
+      }
     }
     /* ===== END MORTALITY REPORT MOBILE ===== */
 
@@ -3905,10 +3955,7 @@
     <div id="printPreviewScroll">
       <div id="printPreviewBody"></div>
     </div>
-    <div id="printPreviewFooter">
-      <button class="btn-print-bottom" onclick="printMortalitySheet()">🖨️ Print Now</button>
-      <button class="btn-close-bottom" onclick="closePreviewOverlay()">✕ Close</button>
-    </div>
+
   </div>
   <!-- END PRINT PREVIEW -->
 
