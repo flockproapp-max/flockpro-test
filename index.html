@@ -780,22 +780,31 @@
     /* ===== MORTALITY REPORT MOBILE ===== */
     .mort-table-scroll {
       width: 100%;
-      overflow-x: auto;
-      overflow-y: visible;
+      max-width: 100%;
+      overflow-x: scroll;
       -webkit-overflow-scrolling: touch;
-      /* iOS: give the scroll container its own stacking context so it
-         can scroll independently without the whole page shifting */
+      /* Force iOS to create its own scroll layer */
+      -webkit-transform: translateZ(0);
       transform: translateZ(0);
-      max-width: 100vw;
+      position: relative;
     }
-    /* Keep #app from scrolling horizontally - .mort-table-scroll handles it */
+    .mort-table-scroll table {
+      min-width: 750px;
+    }
+    /* Keep #app and body from expanding wider than viewport on iOS */
     body.mort-report-active #app {
       overflow-x: hidden;
+      max-width: 100vw;
     }
-    /* Prevent body from being draggable sideways on iOS */
     body.mort-report-active {
       overflow-x: hidden;
+    }
+    /* Ensure container/card don't overflow viewport */
+    body.mort-report-active .container,
+    body.mort-report-active .modern-card {
       max-width: 100vw;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
     @media (max-width: 768px) {
       .mort-stats-grid {
@@ -4684,7 +4693,6 @@
       async saveUserPin() {
         if (!this.user || !this.pin) return;
         try {
-          // Store a SHA256 hash of the PIN for direct verification
           const pinHash = CryptoJS.SHA256(this.pin + '_FLOCKPRO').toString();
           await db.collection('users').doc(this.user.uid).set({
             hasPin: true,
@@ -4977,7 +4985,7 @@
           
           await batch.commit();
           
-          // Update the PIN in memory and save new pinHash to Firestore
+          // Update PIN in memory and save new pinHash to Firestore
           this.pin = newPin;
           await this.saveUserPin();
           
@@ -7321,19 +7329,17 @@
           if (enteredHash === userData.pinHash) {
             // Hash matches - correct PIN, proceed
           } else {
-            // Hash mismatch - check if it's a valid SHA256 hash (64 hex chars) - if so truly wrong PIN
             if (/^[a-f0-9]{64}$/.test(userData.pinHash)) {
               document.getElementById('pinError').textContent = 'Incorrect PIN';
               clearError();
               return;
             }
-            // Otherwise old format - fall through to flock-based verification
             delete userData.pinHash;
           }
         }
         
         if (!userData.pinHash) {
-          // FALLBACK for existing users without pinHash: try decrypting any encrypted field
+          // FALLBACK for existing users without pinHash
           const testFlocks = await db.collection('users').doc(this.user.uid).collection('flocks').limit(5).get();
           const encryptedFields = ['revenue', 'fCost', 'pCost', 'placed', 'shipped', 'weight', 'pricePerLb', 'meds', 'notes'];
           let verified = false;
@@ -7367,7 +7373,7 @@
             return;
           }
 
-          // Fallback succeeded — save pinHash now so future logins use it
+          // Fallback succeeded — save pinHash for future logins
           this.pin = enteredPin;
           await this.saveUserPin();
         }
@@ -7376,10 +7382,8 @@
         this.pin = enteredPin;
         this.pinUnlocked = true;
         
-        // Save session for navigation protection
         this.navProtection.saveSession(this.pin, this.user.uid, this.user.email);
         
-        // Check account status
         this.farmName = userData.farmName || '';
         const accountStatus = userData.status || 'active';
         
@@ -7397,7 +7401,6 @@
           this.accountFrozen = false;
         }
         
-        // Load the app
         this.loadSettings();
         this.loadFlocks();
         this.loadDraft();
