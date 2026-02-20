@@ -577,20 +577,23 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: scroll;
-      overflow-x: hidden;
-      -webkit-overflow-scrolling: touch;
-      touch-action: pan-y;
+      overflow: hidden;
       box-sizing: border-box;
+      flex-direction: column;
     }
     #printPreviewOverlay.active {
-      display: block;
+      display: flex;
+    }
+    #printPreviewScroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      background: #f0f0f0;
     }
     #printPreviewFooter {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      position: relative;
+      flex-shrink: 0;
       z-index: 100001;
       background: #1a1a1a;
       display: flex;
@@ -614,9 +617,9 @@
     #printPreviewFooter .btn-close-bottom { background: #444; color: #fff; }
     @media print { #printPreviewFooter { display: none !important; } }
     #printPreviewToolbar {
-      position: sticky;
-      top: 0;
+      position: relative;
       z-index: 100000;
+      flex-shrink: 0;
       background: #1a1a1a;
       display: flex;
       align-items: center;
@@ -3899,7 +3902,9 @@
         <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close</button>
       </div>
     </div>
-    <div id="printPreviewBody"></div>
+    <div id="printPreviewScroll">
+      <div id="printPreviewBody"></div>
+    </div>
     <div id="printPreviewFooter">
       <button class="btn-print-bottom" onclick="printMortalitySheet()">🖨️ Print Now</button>
       <button class="btn-close-bottom" onclick="closePreviewOverlay()">✕ Close</button>
@@ -11447,8 +11452,9 @@ Current data will be REPLACED. Are you sure?`,
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.add('active');
-      overlay.scrollTop = 0;
-      // Lock body scroll so Android focuses scroll entirely on the overlay
+      const scroller = document.getElementById('printPreviewScroll');
+      if (scroller) scroller.scrollTop = 0;
+      // Lock body scroll so Android focuses scroll on the overlay
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overflow = 'hidden';
       const appEl = document.getElementById('app');
