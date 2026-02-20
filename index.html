@@ -577,12 +577,11 @@
       bottom: 0;
       z-index: 99999;
       background: #f0f0f0;
-      overflow-y: auto;
-      overflow-x: auto;
+      overflow-y: scroll;
+      overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
-      touch-action: pan-y pan-x;
+      touch-action: pan-y;
       box-sizing: border-box;
-      /* Do NOT use overscroll-behavior:contain — it traps users on mobile */
     }
     #printPreviewOverlay.active {
       display: block;
@@ -3894,10 +3893,10 @@
   <!-- PRINT PREVIEW OVERLAY -->
   <div id="printPreviewOverlay">
     <div id="printPreviewToolbar">
-      <span class="toolbar-title">🖨️ Print Preview — FlockPro Report</span>
+      <span class="toolbar-title">🖨️ Mortality Sheet</span>
       <div class="toolbar-actions">
         <button class="btn-print-now" onclick="printMortalitySheet()">🖨️ Print Now</button>
-        <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close Preview</button>
+        <button class="btn-close-preview" onclick="closePreviewOverlay()">✕ Close</button>
       </div>
     </div>
     <div id="printPreviewBody"></div>
@@ -11435,24 +11434,25 @@ Current data will be REPLACED. Are you sure?`,
       window.print();
     }
 
-        function closePreviewOverlay() {
+    function closePreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.remove('active');
+      // Restore body scrolling
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const appEl = document.getElementById('app');
+      if (appEl) appEl.style.overflow = '';
     }
 
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
       overlay.classList.add('active');
       overlay.scrollTop = 0;
-      // Add a spacer at the bottom of the body so zoom-scroll never gets stuck
-      // at the last element. Removed and re-added each time to stay current.
-      const body = document.getElementById('printPreviewBody');
-      const existing = body.querySelector('.print-scroll-spacer');
-      if (existing) existing.remove();
-      const spacer = document.createElement('div');
-      spacer.className = 'print-scroll-spacer';
-      spacer.style.cssText = 'height:200px;width:100%;display:block;';
-      body.appendChild(spacer);
+      // Lock body scroll so Android focuses scroll entirely on the overlay
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      const appEl = document.getElementById('app');
+      if (appEl) appEl.style.overflow = 'hidden';
     }
 
     // ===== MORTALITY SHEET PRINT PREVIEW =====
