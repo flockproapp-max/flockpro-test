@@ -2857,6 +2857,7 @@
     
     .money-group input {
       margin-top: auto; /* Push input to bottom of container */
+      font-size: clamp(0.75em, 3.5vw, 1em);
     }
     
     /* Buttons */
@@ -7370,14 +7371,14 @@
         const password = document.getElementById('password').value;
         
         if (!farmName) {
-          alert('Please enter your farm name');
+          this.showToast('Please enter your farm name', 'error');
           return;
         }
         
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-          alert('❌ Please enter a valid email address');
+          this.showToast('❌ Please enter a valid email address', 'error');
           return;
         }
         
@@ -7396,7 +7397,7 @@
             }, { merge: true });
           }
         } catch (error) {
-          alert('Sign in failed: ' + error.message);
+          this.showToast('Sign in failed: ' + error.message, 'error');
         }
       }
 
@@ -7406,14 +7407,14 @@
         const password = document.getElementById('password').value;
         
         if (!farmName) {
-          alert('Please enter your farm name');
+          this.showToast('Please enter your farm name', 'error');
           return;
         }
         
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-          alert('❌ Please enter a valid email address');
+          this.showToast('❌ Please enter a valid email address', 'error');
           return;
         }
         
@@ -7430,7 +7431,7 @@
         
         const emailDomain = email.split('@')[1];
         if (disposableEmailDomains.includes(emailDomain)) {
-          alert('❌ Temporary or disposable email addresses are not allowed.\n\nPlease use a legitimate business or personal email address.');
+          this.showToast('❌ Temporary or disposable email addresses are not allowed. Please use a legitimate email address.', 'error');
           return;
         }
         
@@ -7448,7 +7449,7 @@
             const approvedEmailsDoc = await db.collection('admin').doc('approvedEmails').get();
             
             if (!approvedEmailsDoc.exists) {
-              alert('❌ Registration is currently disabled. Contact your administrator.');
+              this.showToast('❌ Registration is currently disabled. Contact your administrator.', 'error');
               return;
             }
             
@@ -7456,7 +7457,7 @@
             
             // Convert email to lowercase for case-insensitive comparison
             if (!approvedEmails.includes(email.toLowerCase())) {
-              alert('❌ This email is not approved for registration.\n\nYour administrator must add your email to the approved list before you can create an account.\n\nContact your administrator for access.');
+              this.showToast('❌ This email is not approved. Contact your administrator for access.', 'error');
               return;
             }
           }
@@ -7482,9 +7483,9 @@
           
         } catch (error) {
           if (error.code === 'permission-denied') {
-            alert('❌ Registration is currently restricted. Contact your administrator.');
+            this.showToast('❌ Registration is currently restricted. Contact your administrator.', 'error');
           } else {
-            alert('Sign up failed: ' + error.message);
+            this.showToast('Sign up failed: ' + error.message, 'error');
           }
         }
       }
@@ -12272,7 +12273,7 @@
       
       generateReport() {
         if (this.selectedFlockIds.length === 0) {
-          alert('Please select at least one flock to generate a report.');
+          this.showToast('Please select at least one flock to generate a report.', 'error');
           return;
         }
         
@@ -13184,14 +13185,14 @@
                   const q = parseFloat(itemQtys[item.docId] || 0);
                   const lineTotal = q * parseFloat(item.costPer || 0);
                   return `
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                      <span style="flex:1;color:#ccc;font-size:0.88em;min-width:60px;">${this.escapeHtml(item.name)}</span>
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+                      <span style="flex:1;color:#ccc;font-size:0.88em;min-width:60px;max-width:100%;">${this.escapeHtml(item.name)}</span>
                       <span style="color:#555;font-size:0.75em;white-space:nowrap;">$${parseFloat(item.costPer||0).toFixed(2)}/${this.escapeHtml(item.unit)}</span>
                       <input type="number" min="0" step="0.01" placeholder="0"
                         value="${q || ''}"
                         oninput="app.onInvItemQtyChange('${dataKey}','${item.docId}',this.value)"
-                        style="width:72px;padding:4px 7px;background:#111;border:1px solid rgba(34,197,94,0.3);border-radius:5px;color:#fff;font-size:0.88em;text-align:right;">
-                      <span style="color:#22c55e;font-size:0.85em;font-weight:600;min-width:54px;text-align:right;" id="inv-line-${dataKey}-${item.docId}">$${lineTotal.toFixed(2)}</span>
+                        style="width:65px;padding:4px 7px;background:#111;border:1px solid rgba(34,197,94,0.3);border-radius:5px;color:#fff;font-size:0.88em;text-align:right;flex-shrink:0;">
+                      <span style="color:#22c55e;font-size:0.85em;font-weight:600;min-width:54px;text-align:right;flex-shrink:0;white-space:nowrap;" id="inv-line-${dataKey}-${item.docId}">$${lineTotal.toFixed(2)}</span>
                     </div>`;
                 }).join('')}
                 <div style="display:flex;justify-content:flex-end;border-top:1px solid rgba(34,197,94,0.15);padding-top:5px;margin-top:2px;gap:6px;align-items:center;">
