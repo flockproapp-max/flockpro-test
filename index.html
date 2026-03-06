@@ -4044,6 +4044,218 @@
         grid-template-columns: 1fr 1fr !important;
       }
     }
+
+    /* ===== MOBILE BOTTOM TAB BAR ===== */
+    .bottom-tab-bar {
+      display: none; /* Hidden on desktop */
+    }
+
+    @media (max-width: 768px) {
+      .bottom-tab-bar {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #1a1a2e;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        z-index: 1000;
+        padding: 4px 0 env(safe-area-inset-bottom, 8px);
+        justify-content: space-around;
+        align-items: center;
+      }
+      
+      .bottom-tab {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.5);
+        font-size: 10px;
+        padding: 6px 0;
+        flex: 1;
+        cursor: pointer;
+        transition: color 0.2s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      
+      .bottom-tab-active {
+        color: #60a5fa;
+      }
+      
+      .bottom-tab-icon {
+        font-size: 22px;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+      
+      .bottom-tab-label {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.3px;
+      }
+      
+      /* Hide hamburger button on mobile - tab bar replaces it */
+      .mobile-menu-toggle {
+        display: none !important;
+      }
+      
+      /* Also hide the dropdown nav buttons on mobile since tab bar replaces them */
+      .nav-buttons {
+        display: none !important;
+      }
+      
+      /* Add bottom padding so content isn't hidden behind tab bar */
+      #root {
+        padding-bottom: 70px;
+      }
+      
+      /* Theme support for bottom tab bar */
+      body.light-mode .bottom-tab-bar {
+        background: #ffffff;
+        border-top: 1px solid #e5e7eb;
+      }
+      body.light-mode .bottom-tab {
+        color: rgba(0,0,0,0.4);
+      }
+      body.light-mode .bottom-tab-active {
+        color: #3b82f6;
+      }
+      
+      body.blue-theme .bottom-tab-bar {
+        background: #1e3a5f;
+      }
+      body.blue-theme .bottom-tab-active {
+        color: #60a5fa;
+      }
+      
+      body.purple-theme .bottom-tab-bar {
+        background: #2d1b4e;
+      }
+      body.purple-theme .bottom-tab-active {
+        color: #a78bfa;
+      }
+      
+      body.amber-theme .bottom-tab-bar {
+        background: #2d1f0e;
+      }
+      body.amber-theme .bottom-tab-active {
+        color: #fbbf24;
+      }
+      
+      body.cyan-theme .bottom-tab-bar {
+        background: #0e2a30;
+      }
+      body.cyan-theme .bottom-tab-active {
+        color: #22d3ee;
+      }
+      
+      body.rose-theme .bottom-tab-bar {
+        background: #2d1219;
+      }
+      body.rose-theme .bottom-tab-active {
+        color: #fb7185;
+      }
+      
+      body.harvest-theme .bottom-tab-bar {
+        background: #2d1a0e;
+      }
+      body.harvest-theme .bottom-tab-active {
+        color: #fb923c;
+      }
+      
+      body.feast-theme .bottom-tab-bar {
+        background: #2d0e0e;
+      }
+      body.feast-theme .bottom-tab-active {
+        color: #f87171;
+      }
+      
+      body.wild-theme .bottom-tab-bar {
+        background: #0e2d15;
+      }
+      body.wild-theme .bottom-tab-active {
+        color: #4ade80;
+      }
+      
+      body.camo-theme .bottom-tab-bar {
+        background: #1a2010;
+      }
+      body.camo-theme .bottom-tab-active {
+        color: #a3b88c;
+      }
+
+      /* === Mobile Flock Swipe Navigation === */
+      .mobile-flock-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #1a1a2e;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        gap: 4px;
+      }
+      .mobile-flock-nav .nav-arrow {
+        background: none;
+        border: none;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85em;
+        padding: 6px 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .mobile-flock-nav .nav-arrow:disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+      }
+      .mobile-flock-nav .nav-current {
+        color: #22c55e;
+        font-weight: 700;
+        font-size: 0.95em;
+        text-align: center;
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* === Mobile Log Today Button === */
+      .mobile-log-today-btn {
+        display: block;
+        width: 100%;
+        padding: 18px 16px;
+        background: #22c55e;
+        color: #000;
+        font-weight: 700;
+        font-size: 1.1em;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-bottom: 12px;
+        text-align: center;
+      }
+      .mobile-log-today-btn:active {
+        background: #16a34a;
+      }
+      .desktop-only-grid {
+        display: none;
+      }
+      .mobile-quick-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+    }
+    /* Desktop: hide mobile-only elements */
+    .mobile-flock-nav { display: none; }
+    .mobile-log-today-btn { display: none; }
+    .mobile-quick-grid { display: none; }
+    .desktop-only-grid { display: grid; }
+
   </style>
 </head>
 <body>
@@ -6600,6 +6812,7 @@
         }
         
         // Add copyright footer to all pages
+        content += this.renderBottomTabBar();
         content += this.renderBetaFooter();
 
         // If we're on the flock view, save any unsaved form data before wiping the DOM
@@ -6635,6 +6848,11 @@
           setTimeout(() => {
             this.createProfitChart('profitTrendChart');
           }, 100);
+        }
+
+        // Mobile flock swipe navigation
+        if (this.currentView === 'flock') {
+          setTimeout(() => this.initFlockSwipe(), 0);
         }
       }
 
@@ -6682,6 +6900,45 @@
             this.setupSwipeActions(element, docId);
           });
         }, 0);
+      }
+
+      // Mobile flock swipe navigation
+      initFlockSwipe() {
+        if (window.innerWidth > 768) return;
+        const area = document.getElementById('flock-swipe-area');
+        if (!area || area._swipeInit) return;
+        area._swipeInit = true;
+        let startX = 0, startY = 0, tracking = false;
+        area.addEventListener('touchstart', (e) => {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          tracking = true;
+        }, { passive: true });
+        area.addEventListener('touchmove', (e) => {
+          if (!tracking) return;
+          const dy = Math.abs(e.touches[0].clientY - startY);
+          const dx = Math.abs(e.touches[0].clientX - startX);
+          if (dy > dx) { tracking = false; }
+        }, { passive: true });
+        area.addEventListener('touchend', (e) => {
+          if (!tracking) return;
+          tracking = false;
+          const endX = e.changedTouches[0].clientX;
+          const diff = endX - startX;
+          if (Math.abs(diff) >= 50) {
+            this.navigateFlockBySwipe(diff < 0 ? 1 : -1);
+          }
+        }, { passive: true });
+      }
+
+      navigateFlockBySwipe(direction) {
+        if (!this.currentFlock) return;
+        const idx = this.flocks.findIndex(f => f.docId === this.currentFlock.docId);
+        if (idx === -1) return;
+        const newIdx = idx + direction;
+        if (newIdx >= 0 && newIdx < this.flocks.length) {
+          this.viewFlock(this.flocks[newIdx].docId);
+        }
       }
 
       updateFlockCard(docId) {
@@ -6798,6 +7055,28 @@
         `;
       }
 
+      renderBottomTabBar() {
+        const tabs = [
+          { view: 'home', icon: '🏠', label: 'Home' },
+          { view: 'flocks', icon: '🐔', label: 'Flocks' },
+          { view: 'inventory', icon: '📦', label: 'Inventory' },
+          { view: 'summary', icon: '📊', label: 'Reports' },
+          { view: 'settings', icon: '⚙️', label: 'Settings' }
+        ];
+        
+        return `
+          <nav class="bottom-tab-bar">
+            ${tabs.map(t => `
+              <button class="bottom-tab ${this.currentView === t.view ? 'bottom-tab-active' : ''}" 
+                      onclick="app.navigate('${t.view}')">
+                <span class="bottom-tab-icon">${t.icon}</span>
+                <span class="bottom-tab-label">${t.label}</span>
+              </button>
+            `).join('')}
+          </nav>
+        `;
+      }
+
       renderBetaFooter() {
         return `
           <div class="no-print" style="padding: 24px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 40px; background: rgba(0, 0, 0, 0.3);">
@@ -6879,7 +7158,26 @@
             </div>
 
             <!-- Quick Actions - Compact -->
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+            ${(() => {
+              const activeFlock = this.flocks.find(f => !f.shippedDate) || (this.flocks.length > 0 ? this.flocks[this.flocks.length - 1] : null);
+              const logTodayHtml = activeFlock ? `<button class="mobile-log-today-btn" onclick="app.viewFlock('${activeFlock.docId}'); app.flockTab='daily'; app.loadDailyLogs();">📅 Log Today</button>` : '';
+              return logTodayHtml;
+            })()}
+            <div class="desktop-only-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 24px;">
+              <button onclick="app.navigate('flocks')" class="btn btn-primary" style="padding: 16px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>➕</span> New Flock
+              </button>
+              <button onclick="app.navigate('flocks')" class="btn btn-secondary" style="padding: 16px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>📋</span> All Flocks
+              </button>
+              <button onclick="app.navigate('summary')" class="btn btn-secondary" style="padding: 16px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>📊</span> Reports
+              </button>
+              <button onclick="app.navigate('compare')" class="btn btn-secondary" style="padding: 16px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span>⚖️</span> Compare
+              </button>
+            </div>
+            <div class="mobile-quick-grid">
               <button onclick="app.navigate('flocks')" class="btn btn-primary" style="padding: 16px; font-size: 1em; display: flex; align-items: center; justify-content: center; gap: 8px;">
                 <span>➕</span> New Flock
               </button>
@@ -7533,8 +7831,17 @@
         const metrics = this.calculateMetrics(this.currentFlock);
         const profitClass = metrics.profit >= 0 ? 'profit' : 'loss';
 
+        const flockIdx = this.flocks.findIndex(f => f.docId === this.currentFlock.docId);
+        const prevFlock = flockIdx > 0 ? this.flocks[flockIdx - 1] : null;
+        const nextFlock = flockIdx < this.flocks.length - 1 ? this.flocks[flockIdx + 1] : null;
+
         return `
-          <div class="container">
+          <div class="container" id="flock-swipe-area">
+            <div class="mobile-flock-nav">
+              <button class="nav-arrow" ${prevFlock ? `onclick="app.viewFlock('${prevFlock.docId}')"` : 'disabled'}>◀ ${prevFlock ? 'Flock #' + this.escapeHtml(String(prevFlock.id)) : ''}</button>
+              <span class="nav-current">Flock #${this.escapeHtml(String(this.currentFlock.id))}</span>
+              <button class="nav-arrow" ${nextFlock ? `onclick="app.viewFlock('${nextFlock.docId}')"` : 'disabled'}>${nextFlock ? 'Flock #' + this.escapeHtml(String(nextFlock.id)) : ''} ▶</button>
+            </div>
             <div style="display: flex; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
               <button onclick="app.undo()" class="btn btn-secondary" ${this.undoStack.length === 0 ? 'disabled style="opacity: 0.5; cursor: not-allowed;"' : ''}>↶ Undo</button>
               <button onclick="app.openReportView('flock')" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Preview</button>
