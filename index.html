@@ -591,6 +591,11 @@
       justify-content: flex-end;
     }
     
+    /* Hide number input spinners */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+    input[type=number] { -moz-appearance:textfield; }
+
     /* ===== PRINT PREVIEW OVERLAY ===== */
     #printPreviewOverlay {
       display: none;
@@ -766,7 +771,7 @@
     #printPreviewBody .highlight-row .hvalue { font-size: 16px; font-weight: 700; color: #16a34a; }
     #printPreviewBody .footer { margin-top: 32px; margin-bottom: 80px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; text-align: center; }
 
-    @page { size: landscape; margin: 0.3in; }
+    @page { size: portrait; margin: 0.2in; }
 
     @media print {
       /* Print the report app view directly */
@@ -792,7 +797,7 @@
     /* ===== END PRINT PREVIEW ===== */
 
     @media print {
-      @page { size: landscape; margin: 0.3in; }
+      @page { size: portrait; margin: 0.2in; }
       .no-print { display: none !important; }
       body, #app, #root { overflow: visible !important; height: auto !important; position: static !important; }
       .modern-card { page-break-inside: auto !important; overflow: visible !important; padding: 4px !important; }
@@ -4001,6 +4006,43 @@
     select option:hover {
       background-color: #2a2a2a;
       color: #22c55e;
+    }
+
+    /* ===== MOBILE-ONLY FIXES ===== */
+    @media (max-width: 600px) {
+      /* Inventory: category header - wrap to 2 rows so name isn't truncated */
+      .modern-card > div:first-child {
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 10px 12px !important;
+      }
+      /* Let category name take full width on its own row */
+      .modern-card > div:first-child > span[style*="flex:1"],
+      .modern-card > div:first-child > input[style*="flex:1"] {
+        flex: unset !important;
+        width: 100% !important;
+        order: -1 !important;
+        font-size: 1em !important;
+        overflow: visible !important;
+        white-space: normal !important;
+        text-overflow: unset !important;
+      }
+      /* Inventory: tighter card padding */
+      .modern-card {
+        margin-bottom: 8px !important;
+      }
+      .modern-card > div[style*="padding:12px 14px"] {
+        padding: 8px 10px !important;
+      }
+      /* Daily log: stack Water/Meds vertically on phone */
+      #waterMedsGrid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+      /* Inventory items: stack fields vertically */
+      .modern-card div[style*="grid-template-columns:1fr 1fr 1fr auto"] {
+        grid-template-columns: 1fr 1fr !important;
+      }
     }
   </style>
 </head>
@@ -7913,7 +7955,7 @@
 
               <div class="daily-log-field">
                 <label>🧪 Water Additives &amp; Meds/Vaccines</label>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <div id="waterMedsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
 
                   <!-- WATER PRODUCTS (linked to inventory) -->
                   <div style="background:#111; border:1px solid #2a2a2a; border-radius:10px; padding:10px;">
@@ -10333,21 +10375,21 @@
 
         // White-background card matching old print preview style
         const card = (label, value, color) =>
-          `<div style="border:1px solid #ddd;border-radius:6px;padding:10px 12px;text-align:center;background:#fff;">
-             <div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
-             <div style="font-size:18px;font-weight:700;color:${color||'#111'};margin-top:2px;">${value}</div>
+          `<div style="border:1px solid #ddd;border-radius:5px;padding:8px 10px;text-align:center;background:#fff;">
+             <div style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">${label}</div>
+             <div style="font-size:17px;font-weight:700;color:${color||'#111'};margin-top:1px;">${value}</div>
            </div>`;
         const metricCard = (label, value) =>
-          `<div style="background:#f8f8f8;border-radius:6px;padding:8px 10px;text-align:center;">
-             <div style="font-size:10px;color:#666;text-transform:uppercase;">${label}</div>
-             <div style="font-size:15px;font-weight:700;color:#111;">${value}</div>
+          `<div style="background:#f8f8f8;border-radius:4px;padding:5px 8px;text-align:center;">
+             <div style="font-size:9px;color:#666;text-transform:uppercase;">${label}</div>
+             <div style="font-size:13px;font-weight:700;color:#111;">${value}</div>
            </div>`;
         const sectionHead = (title) =>
-          `<h2 style="font-size:16px;margin:20px 0 8px;border-bottom:2px solid #22c55e;padding-bottom:4px;color:#111;">${title}</h2>`;
+          `<h2 style="font-size:15px;margin:14px 0 6px;border-bottom:2px solid #22c55e;padding-bottom:3px;color:#111;">${title}</h2>`;
         const statRow = (items) =>
-          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin:10px 0;">${items}</div>`;
+          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:6px 0;">${items}</div>`;
         const metricRow = (items) =>
-          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin:8px 0;">${items}</div>`;
+          `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:5px;margin:4px 0;">${items}</div>`;
 
         let reportContent = '';
 
@@ -10380,14 +10422,13 @@
           });
 
           reportContent = `
-            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:16px;margin-bottom:24px;">
-              <h1 style="font-size:22px;margin:0 0 4px;color:#111;">FlockPro — Flock Report</h1>
-              <div style="font-size:13px;color:#555;">${this.escapeHtml(farmName)}</div>
-              <div style="font-size:12px;color:#888;">Generated: ${now}</div>
+            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:10px;margin-bottom:12px;">
+              <h1 style="font-size:20px;margin:0 0 2px;color:#111;">FlockPro — Flock Report</h1>
+              <div style="font-size:11px;color:#555;">${this.escapeHtml(farmName)} · Generated: ${now}</div>
             </div>
-            <div style="text-align:center;margin-bottom:20px;">
-              <div style="font-size:48px;font-weight:700;color:${profitClass};">${fmt(m.totalProfit)}</div>
-              <div style="font-size:12px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
+            <div style="text-align:center;margin-bottom:14px;">
+              <div style="font-size:42px;font-weight:700;color:${profitClass};line-height:1.1;">${fmt(m.totalProfit)}</div>
+              <div style="font-size:10px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
             </div>
             ${sectionHead('📊 Financial Summary')}
             ${statRow(
@@ -10426,7 +10467,7 @@
               ${sectionHead('💰 Expense Breakdown')}
               <table style="width:100%;border-collapse:collapse;">${expenseRows}</table>
             ` : ''}
-            <div style="margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#999;text-align:center;margin-bottom:20px;">
+            <div style="margin-top:12px;padding-top:6px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center;margin-bottom:14px;">
               FlockPro v${this.appVersion} • ${this.escapeHtml(farmName)} • ${now}
             </div>
           `;
@@ -10436,14 +10477,13 @@
           const profitColor = s.profit >= 0 ? '#16a34a' : '#dc2626';
 
           reportContent = `
-            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:16px;margin-bottom:24px;">
-              <h1 style="font-size:22px;margin:0 0 4px;color:#111;">FlockPro — Summary Report</h1>
-              <div style="font-size:13px;color:#555;">${this.escapeHtml(farmName)}</div>
-              <div style="font-size:12px;color:#888;">Generated: ${now} | ${selectedFlocks.length} Flocks Selected</div>
+            <div style="text-align:center;border-bottom:3px solid #22c55e;padding-bottom:10px;margin-bottom:12px;">
+              <h1 style="font-size:20px;margin:0 0 2px;color:#111;">FlockPro — Summary Report</h1>
+              <div style="font-size:11px;color:#555;">${this.escapeHtml(farmName)} · Generated: ${now} · ${selectedFlocks.length} Flocks Selected</div>
             </div>
-            <div style="text-align:center;margin-bottom:20px;">
-              <div style="font-size:48px;font-weight:700;color:${profitColor};">${fmt(s.profit)}</div>
-              <div style="font-size:12px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
+            <div style="text-align:center;margin-bottom:8px;">
+              <div style="font-size:42px;font-weight:700;color:${profitColor};line-height:1.1;">${fmt(s.profit)}</div>
+              <div style="font-size:10px;color:#666;letter-spacing:0.1em;text-transform:uppercase;">Total Profit</div>
             </div>
             ${sectionHead('📊 Financial Overview')}
             ${statRow(
@@ -10491,7 +10531,7 @@
                 </table>
               </div>
             ` : ''}
-            <div style="margin-top:32px;padding-top:12px;border-top:1px solid #ddd;font-size:11px;color:#999;text-align:center;margin-bottom:20px;">
+            <div style="margin-top:12px;padding-top:6px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center;margin-bottom:8px;">
               FlockPro v${this.appVersion} • ${this.escapeHtml(farmName)} • ${now}
             </div>
           `;
@@ -10502,7 +10542,7 @@
         const backView = this.reportSource === 'flock' ? 'flock' : 'summary';
         return `
           <div class="container">
-            <div class="modern-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;">
+            <div class="modern-card" id="report-print-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
                 <button onclick="app.navigate('${backView}')" class="btn btn-secondary">← Back</button>
                 <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
@@ -11084,6 +11124,11 @@
 
       async invDeleteCategory(catId) {
         const cat = this.inventoryCategories.find(c => c.docId === catId);
+        // Permanent categories cannot be deleted
+        if (cat && (cat.expFieldKey === 'meds' || cat.expFieldKey === 'water' || cat.name === 'Meds & Vaccines' || cat.name === 'Water Additives')) {
+          this.showToast('This is a permanent category and cannot be deleted', 'error');
+          return;
+        }
         const batch = db.batch();
         // Delete inv category + items
         batch.delete(db.collection('users').doc(this.user.uid).collection('invCategories').doc(catId));
@@ -11158,6 +11203,11 @@
         if (!newName.trim()) return;
         const cat = this.inventoryCategories.find(c => c.docId === catId);
         if (!cat) return;
+        if (cat.expFieldKey === 'meds' || cat.expFieldKey === 'water' || cat.name === 'Meds & Vaccines' || cat.name === 'Water Additives') {
+          this.showToast('This is a permanent category and cannot be renamed', 'error');
+          this.render();
+          return;
+        }
         cat.name = newName.trim();
         await db.collection('users').doc(this.user.uid).collection('invCategories').doc(catId).update({ name: cat.name });
         // Mirror rename to expense category
@@ -11607,14 +11657,11 @@
                           style="background:rgba(255,255,255,0.08);border:none;color:#aaa;border-radius:4px;padding:1px 6px;cursor:pointer;font-size:0.7em;line-height:1.4;">▼</button>
                       </div>
                       <span style="color:#555;font-size:0.85em;min-width:18px;">${this.inventoryCategories.indexOf(cat)+1}</span>
-                      <input
-                        value="${this.escapeHtml(cat.name)}"
-                        onblur="app.invRenameCategoryInline('${cat.docId}',this.value)"
-                        onkeydown="if(event.key==='Enter')this.blur()"
-                        style="flex:1;background:transparent;border:none;color:#e2e8f0;font-size:1.05em;font-weight:600;outline:none;min-width:0;"
-                        placeholder="Category name">
+                      ${(cat.expFieldKey === 'meds' || cat.expFieldKey === 'water' || cat.name === 'Meds & Vaccines' || cat.name === 'Water Additives')
+                        ? '<span style="flex:1;color:#e2e8f0;font-size:1.05em;font-weight:600;min-width:0;">' + this.escapeHtml(cat.name) + '</span>'
+                        : '<input value="' + this.escapeHtml(cat.name) + '" onblur="app.invRenameCategoryInline(\'' + cat.docId + '\',this.value)" onkeydown="if(event.key===\'Enter\')this.blur()" style="flex:1;background:transparent;border:none;color:#e2e8f0;font-size:1.05em;font-weight:600;outline:none;min-width:0;" placeholder="Category name">'}
                       <span id="inv-cat-total-${cat.docId}" style="color:#22c55e;font-weight:700;font-size:0.95em;white-space:nowrap;">$${catTotal.toFixed(2)}</span>
-                      <button onclick="app.invDeleteCategory('${cat.docId}')" title="Delete category" style="background:none;border:none;color:#ef4444;font-size:1.1em;cursor:pointer;padding:2px 6px;opacity:0.7;">🗑️</button>
+                      ${(cat.expFieldKey === 'meds' || cat.expFieldKey === 'water' || cat.name === 'Meds & Vaccines' || cat.name === 'Water Additives') ? '<span style="color:#555;font-size:0.85em;padding:2px 6px;" title="Permanent category">🔒</span>' : '<button onclick="app.invDeleteCategory(\'' + cat.docId + '\')" title="Delete category" style="background:none;border:none;color:#ef4444;font-size:1.1em;cursor:pointer;padding:2px 6px;opacity:0.7;">🗑️</button>'}
                       <button onclick="app.invToggleCollapse('${cat.docId}')" style="background:#22c55e;border:none;color:#000;font-weight:700;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.85em;">
                         ${collapsed ? '▶ ' + items.length : '▼ ' + items.length}
                       </button>
@@ -13770,32 +13817,138 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      const body = document.getElementById('printPreviewBody');
-      if (!body) { window.print(); return; }
+      if (!app || !app.currentFlock) return;
+      app.loadDailyLogs().catch(()=>{}).then(() => {
+        const flock      = app.currentFlock;
+        const logs       = app.dailyLogs || [];
+        const farmName   = (app.settings && app.settings.farmName) || 'Farm';
+        const flockId    = flock.id || '—';
+        const placed     = parseFloat(String(flock.placed||flock.birdsPlaced||flock.numBirds||0).replace(/[,$]/g,'')) || 0;
+        const now        = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+        const DAYS       = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const WEEKS      = 22;
+        const base       = (flock.placedDate||flock.startDate||flock.startedDate) ? new Date((flock.placedDate||flock.startDate||flock.startedDate)+'T00:00:00') : null;
+        const fmt        = d => String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+        const toYMD      = d => d.toISOString().split('T')[0];
 
-      const content = body.innerHTML;
-      const win = window.open('', '_blank');
-      win.document.write(`<!DOCTYPE html><html><head><title>Mortality Sheet</title>
-        <style>
-          html, body { margin: 0; padding: 0; }
-          @page { size: landscape; margin: 0.1in; }
-          body {
-            font-family: Arial, sans-serif;
-            zoom: 0.55;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+        const deathMap = {};
+        logs.forEach(l => { if (l.date) deathMap[l.date] = (deathMap[l.date]||0)+(l.deaths||0); });
+
+        let running = 0;
+        const weeks = [];
+        for (let w=0; w<WEEKS; w++) {
+          let wkD=0; const days=[];
+          for (let d=0; d<7; d++) {
+            const idx=w*7+d; let n=0;
+            if (base) { const dt=new Date(base); dt.setDate(base.getDate()+idx); n=deathMap[toYMD(dt)]||0; }
+            wkD+=n; days.push(n);
           }
-          table { width:100%; border-collapse:collapse; }
-          th, td { border: 1px solid #ccc; }
-        </style>
-      </head><body>${content}</body></html>`);
-      win.document.close();
-      win.focus();
-      setTimeout(function() { win.print(); win.close(); }, 400);
+          running+=wkD;
+          const livab = placed>0 ? (((placed-running)/placed)*100).toFixed(2)+'%' : '—';
+          weeks.push({w:w+1, days, wkD, livab, hot: wkD>0 && wkD>=(logs.reduce((s,l)=>s+(l.deaths||0),0)/WEEKS)*1.5});
+        }
+        const totalDead = logs.reduce((s,l)=>s+(l.deaths||0),0);
+        const finalLiv  = placed>0 ? (((placed-totalDead)/placed)*100).toFixed(2)+'%' : 'N/A';
+
+        const rows = weeks.map(wk => {
+          const hot=wk.hot, hasAny=wk.wkD>0;
+          const bg=hot?'#fff0f0':hasAny?'#fffbf0':'#fff';
+          const wkColor=hot?'#dc2626':'#16a34a';
+          const dayCells = wk.days.map(n =>
+            `<td style="text-align:center;border:1px solid #bbb;padding:4px 3px;min-width:38px;">
+              <span style="font-size:18px;font-weight:700;color:${n>0?'#dc2626':'transparent'};">${n>0?n:'\u00A0'}</span>
+            </td>`).join('');
+          return `<tr style="background:${bg};">
+            <td style="padding:4px 10px;border-right:2px solid #999;border:1px solid #bbb;font-weight:800;font-size:18px;color:${wkColor};white-space:nowrap;">Wk ${wk.w}</td>
+            ${dayCells}
+            <td style="text-align:center;padding:4px 8px;border-left:2px solid #ddd;font-size:18px;font-weight:700;color:${hasAny?'#dc2626':'#ccc'};">${hasAny?wk.wkD:'\u00A0'}</td>
+            <td style="text-align:center;padding:4px 8px;border:1px solid #bbb;font-size:18px;font-weight:700;color:#16a34a;">${wk.livab}</td>
+          </tr>`;
+        }).join('');
+
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html><html><head><title>Mortality Sheet</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            @page { size: portrait; margin: 0.2in; }
+            body { font-family: Arial, sans-serif; font-size: 18px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            h2 { font-size: 24px; margin-bottom: 4px; }
+            .stats { display: flex; gap: 8px; margin: 10px 0; }
+            .stat { flex:1; border:1px solid #e5e5e5; border-radius:6px; padding:6px; text-align:center; }
+            .stat .lbl { font-size:14px; color:#888; text-transform:uppercase; font-weight:700; }
+            .stat .val { font-size:26px; font-weight:800; margin-top:2px; }
+            table { width:100%; border-collapse:collapse; }
+            thead tr { background:#111; color:#fff; }
+            thead th { padding:6px 5px; font-size:18px; }
+            tfoot tr { background:#f5f5f5; border-top:2px solid #111; }
+            tfoot td { padding:6px 8px; font-size:18px; font-weight:700; text-align:center; }
+            input[type=number]::-webkit-inner-spin-button,
+            input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+            input[type=number] { -moz-appearance:textfield; }
+          </style>
+        </head><body>
+          <h2>${farmName} &nbsp;<span style="font-weight:400;color:#555;">Flock #${flockId} &middot; ${now}</span></h2>
+          <div class="stats">
+            <div class="stat" style="background:#f0fdf4;"><div class="lbl">Birds Placed</div><div class="val">${placed>0?placed.toLocaleString():'—'}</div></div>
+            <div class="stat" style="background:#fef2f2;"><div class="lbl">Total Dead</div><div class="val" style="color:#dc2626;">${totalDead.toLocaleString()}</div></div>
+            <div class="stat" style="background:#f0fdf4;"><div class="lbl">Birds Left</div><div class="val" style="color:#16a34a;">${placed>0?(placed-totalDead).toLocaleString():'—'}</div></div>
+            <div class="stat" style="background:#fffbeb;"><div class="lbl">Mortality %</div><div class="val" style="color:#d97706;">${placed>0?((totalDead/placed)*100).toFixed(2)+'%':'N/A'}</div></div>
+            <div class="stat" style="background:#f0fdf4;"><div class="lbl">Livability</div><div class="val" style="color:#16a34a;">${finalLiv}</div></div>
+          </div>
+          <table>
+            <thead><tr>
+              <th style="text-align:left;padding:6px 10px;">Week</th>
+              ${DAYS.map(d=>`<th>${d}</th>`).join('')}
+              <th style="border-left:2px solid #444;">Dead</th>
+              <th>Livab.</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot><tr>
+              <td colspan="8" style="text-align:left;padding:6px 10px;font-size:18px;">TOTAL</td>
+              <td style="color:#dc2626;border:1px solid #bbb;border-left:2px solid #999;">${totalDead||'—'}</td>
+              <td style="color:#16a34a;">${finalLiv}</td>
+            </tr></tfoot>
+          </table>
+          <div style="margin-top:10px;font-size:11px;color:#aaa;text-align:center;">FlockPro &middot; ${farmName} &middot; Flock #${flockId} &middot; ${now}</div>
+          <script>window.onload=function(){setTimeout(function(){window.print();window.close();},400);};<\/script>
+        </body></html>`);
+        win.document.close();
+        win.focus();
+      });
     }
 
     function smartPrint() {
-      window.print();
+      const card = document.getElementById('report-print-card');
+      if (!card) { window.print(); return; }
+
+      const clone = card.cloneNode(true);
+      const btnRow = clone.querySelector('div[style*="justify-content:space-between"]');
+      if (btnRow) btnRow.remove();
+
+      const content = clone.innerHTML;
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><title>Flock Report</title>
+        <style>
+          html, body { margin: 0; padding: 0; }
+          @page { size: portrait; margin: 0.25in; }
+          body {
+            font-family: Arial, sans-serif;
+            zoom: 0.82;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            color: #111;
+          }
+          table { width: 100%; border-collapse: collapse; }
+          td, th { padding: 4px 6px; border: 1px solid #eee; }
+        </style>
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); window.close(); }, 400);
+          };
+        <\/script>
+      </head><body>${content}</body></html>`);
+      win.document.close();
+      win.focus();
     }
 
     function closePreviewOverlay() {
@@ -13846,7 +13999,7 @@ Current data will be REPLACED. Are you sure?`,
               lbl = fmt(dt); n = deaths[toYMD(dt)]||0;
               if (d===0) wkStart=dt; if (d===6) wkEnd=dt;
             }
-            wkDeaths+=n; days.push({n,lbl});
+            wkDeaths+=n; days.push({n, lbl, dateStr: base ? toYMD(new Date(new Date(base).setDate(base.getDate()+(w*7+d)))) : null});
           }
           running+=wkDeaths;
           if (wkDeaths>maxWk) maxWk=wkDeaths;
@@ -13869,7 +14022,16 @@ Current data will be REPLACED. Are you sure?`,
 
           const dayCells = wk.days.map(day =>
             `<td style="text-align:center;padding:2px 4px;border:1px solid #eee;white-space:nowrap;">` +
-            `<div style="font-size:${day.n>0?36:28}px;font-weight:${day.n>0?800:300};color:${day.n>0?'#dc2626':'#ddd'};line-height:1;">${day.n>0?day.n:'—'}</div>` +
+            `<input type="number" min="0" data-date="${day.dateStr||''}"
+              value="${day.n>0?day.n:''}"
+              onchange="window._mortUpdateDeaths(this)"
+              onkeydown="if(event.key==='Enter'){this.blur();}"
+              style="width:70px;height:40px;text-align:center;border:1px solid #ddd;border-radius:4px;
+              font-size:24px;font-weight:700;color:#dc2626;background:${day.n>0?'#fff8f8':'#fafafa'};
+              outline:none;-moz-appearance:textfield;-webkit-appearance:none;appearance:none;"
+              onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff';this.select();"
+              onblur="this.style.borderColor='#ddd';this.style.background=this.value?'#fff8f8':'#fafafa';"
+            />` +
             `</td>`
           ).join('');
 
@@ -13921,7 +14083,7 @@ Current data will be REPLACED. Are you sure?`,
                 <tfoot>
                   <tr style="background:#f5f5f5;border-top:2px solid #111;font-weight:700;">
                     <td colspan="8" style="padding:6px 10px;font-size:26px;">TOTAL</td>
-                    <td style="text-align:center;padding:6px;font-size:26px;font-weight:700;color:#dc2626;border-left:2px solid #ddd;">${totalDead||'—'}</td>
+                    <td style="text-align:center;padding:6px;font-size:26px;font-weight:700;color:#dc2626;border:1px solid #bbb;border-left:2px solid #999;">${totalDead||'—'}</td>
                     <td style="text-align:center;padding:6px;font-size:26px;font-weight:700;color:#16a34a;border-left:2px solid #ddd;">${finalLiv}</td>
                   </tr>
                 </tfoot>
@@ -13931,7 +14093,69 @@ Current data will be REPLACED. Are you sure?`,
           </div>`;
       });
     }
-    // ===== END MORTALITY SHEET =====
+    // Mortality sheet: update deaths for a specific date
+    window._mortUpdateDeaths = async function(input) {
+      if (!app || !app.currentFlock) return;
+      const dateStr = input.dataset.date;
+      if (!dateStr) { app.showToast('⚠️ No date for this cell'); return; }
+      const newVal = parseInt(input.value) || 0;
+      if (newVal < 0) { input.value = 0; return; }
+
+      try {
+        const existing = app.dailyLogs.find(l => l.date === dateStr);
+        if (existing) {
+          // Update existing log entry - SET deaths (not add)
+          await db.collection('users').doc(app.user.uid)
+            .collection('flocks').doc(app.currentFlock.docId)
+            .collection('dailyLogs').doc(existing.id).update({ deaths: newVal, updatedAt: new Date().toISOString() });
+          existing.deaths = newVal;
+          app.showToast('✅ ' + dateStr + ': ' + newVal + ' deaths saved');
+        } else if (newVal > 0) {
+          // Create new log entry for this date
+          const entry = {
+            date: dateStr, deaths: newVal, culls: 0,
+            waterGallons: 0, waterProducts: '', waterProductsCost: 0,
+            medsUsed: '', medsCost: 0, savedAt: new Date().toISOString()
+          };
+          const ref = await db.collection('users').doc(app.user.uid)
+            .collection('flocks').doc(app.currentFlock.docId)
+            .collection('dailyLogs').add(entry);
+          entry.id = ref.id;
+          app.dailyLogs.push(entry);
+          app.showToast('✅ ' + dateStr + ': ' + newVal + ' deaths saved');
+        }
+        // Update flock totals
+        const totalDead = app.dailyLogs.reduce((s,l) => s + (l.deaths||0) + (l.culls||0), 0);
+        const birdsLeft = Math.max(0, (app.currentFlock.placed||0) - totalDead);
+        const totalWaterCost = app.dailyLogs.reduce((s,l) => s + (l.waterProductsCost||0), 0);
+        const totalMedsCost = app.dailyLogs.reduce((s,l) => s + (l.medsCost||0), 0);
+        await db.collection('users').doc(app.user.uid)
+          .collection('flocks').doc(app.currentFlock.docId)
+          .update({ shipped: birdsLeft, water: Math.round(totalWaterCost*100)/100, meds: Math.round(totalMedsCost*100)/100 });
+        app.currentFlock.shipped = birdsLeft;
+
+        // Update the summary stats at the top without full re-render
+        const placed = app.currentFlock.placed || 0;
+        const deadOnly = app.dailyLogs.reduce((s,l) => s + (l.deaths||0), 0);
+        const mortPct = placed > 0 ? ((deadOnly/placed)*100).toFixed(2) + '%' : 'N/A';
+        const livPct = placed > 0 ? (((placed-deadOnly)/placed)*100).toFixed(2) + '%' : 'N/A';
+        // Update weekly Dead + Livab cells in the same row
+        const row = input.closest('tr');
+        if (row) {
+          const cells = row.querySelectorAll('td');
+          let wkTotal = 0;
+          row.querySelectorAll('input[type=number]').forEach(inp => { wkTotal += parseInt(inp.value)||0; });
+          const deadCell = cells[cells.length-2];
+          const livCell = cells[cells.length-1];
+          if (deadCell) deadCell.innerHTML = wkTotal > 0 ? '<span style="font-size:26px;font-weight:700;color:#dc2626;">'+wkTotal+'</span>' : '<span style="color:#ccc;">—</span>';
+        }
+      } catch(e) {
+        app.showToast('❌ Error saving: ' + e.message);
+        console.error(e);
+      }
+    };
+
+        // ===== END MORTALITY SHEET =====
 
     function openPreviewOverlay() {
       const overlay = document.getElementById('printPreviewOverlay');
