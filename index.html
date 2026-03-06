@@ -6748,7 +6748,7 @@
               <button class="nav-btn ${this.currentView === 'home' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('home'); app.closeMobileMenu()">Home</button>
               <button class="nav-btn ${this.currentView === 'flocks' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('flocks'); app.closeMobileMenu()">Flocks</button>
               <button class="nav-btn ${this.currentView === 'compare' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('compare'); app.closeMobileMenu()">Compare</button>
-              <button class="nav-btn ${this.currentView === 'summary' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('summary'); app.closeMobileMenu()">Summary</button>
+              <button class="nav-btn ${this.currentView === 'summary' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('summary'); app.closeMobileMenu()">Reports</button>
               <button class="nav-btn ${this.currentView === 'inventory' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('inventory'); app.closeMobileMenu()">Inventory &amp; Expenses</button>
               <button class="nav-btn ${this.currentView === 'settings' ? 'nav-btn-primary' : 'nav-btn-secondary'}" onclick="app.navigate('settings'); app.closeMobileMenu()">Settings</button>
             </div>
@@ -13770,11 +13770,28 @@ Current data will be REPLACED. Are you sure?`,
     // ===== END PRINT PREVIEW =====
 
     function printMortalitySheet() {
-      closePreviewOverlay();
+      const body = document.getElementById('printPreviewBody');
+      if (!body) { window.print(); return; }
 
-      promise.then(function() {
-        setTimeout(function() { window.print(); }, 600);
-      });
+      const content = body.innerHTML;
+      const win = window.open('', '_blank');
+      win.document.write(`<!DOCTYPE html><html><head><title>Mortality Sheet</title>
+        <style>
+          html, body { margin: 0; padding: 0; }
+          @page { size: landscape; margin: 0.1in; }
+          body {
+            font-family: Arial, sans-serif;
+            zoom: 0.55;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          table { width:100%; border-collapse:collapse; }
+          th, td { border: 1px solid #ccc; }
+        </style>
+      </head><body>${content}</body></html>`);
+      win.document.close();
+      win.focus();
+      setTimeout(function() { win.print(); win.close(); }, 400);
     }
 
     function smartPrint() {
