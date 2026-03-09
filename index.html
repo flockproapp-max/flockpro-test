@@ -5108,6 +5108,214 @@
       }
 
       // Confirmation Modal
+      showSettlementModal() {
+        const s = this.currentFlock && this.currentFlock.settlement;
+        const flock = this.currentFlock;
+
+        const pct = (v) => (v !== null && v !== undefined) ? (parseFloat(v) * 100).toFixed(2) + '%' : '—';
+        const num = (v, dec = 3) => (v !== null && v !== undefined && v !== 0) ? parseFloat(v).toFixed(dec) : '—';
+        const money = (v, dec = 4) => (v !== null && v !== undefined && v !== 0) ? '$' + parseFloat(v).toFixed(dec) : '—';
+        const fmt = (v, dec = 0) => (v !== null && v !== undefined && v !== 0) ? parseFloat(v).toLocaleString(undefined, {minimumFractionDigits: dec, maximumFractionDigits: dec}) : '—';
+
+        const field = (label, key, type = 'number', step = '0.001', suffix = '') => {
+          const val = s ? (s[key] !== null && s[key] !== undefined ? s[key] : '') : '';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #1a1a1a;gap:8px;">
+              <span style="color:#888;font-size:0.85em;flex:1;">${label}</span>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="${type}" value="${val}" step="${step}"
+                  onchange="app._settlementEdit('${key}', this.value)"
+                  style="width:110px;background:#111;border:1px solid #2a2a2a;border-radius:5px;color:#fff;padding:4px 7px;font-size:0.88em;text-align:right;">
+                ${suffix ? `<span style="color:#666;font-size:0.8em;">${suffix}</span>` : ''}
+              </div>
+            </div>`;
+        };
+
+        const sectionHeader = (title) =>
+          `<div style="color:#22c55e;font-size:0.78em;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:18px 0 6px;padding-bottom:4px;border-bottom:1px solid #22c55e33;">${title}</div>`;
+
+        // Build weekly ingredient table
+        const weeks = s && s.weeklyIngredients && s.weeklyIngredients.length > 0 ? s.weeklyIngredients : [];
+        const weeklyTable = weeks.length > 0 ? `
+          <div style="overflow-x:auto;margin-top:8px;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.8em;">
+              <thead>
+                <tr style="color:#22c55e;border-bottom:1px solid #22c55e33;">
+                  <th style="text-align:left;padding:5px 8px;font-weight:600;">Wk</th>
+                  <th style="text-align:left;padding:5px 8px;font-weight:600;">Date</th>
+                  <th style="text-align:right;padding:5px 8px;font-weight:600;">Corn $/bu</th>
+                  <th style="text-align:right;padding:5px 8px;font-weight:600;">SBM $/ton</th>
+                  <th style="text-align:right;padding:5px 8px;font-weight:600;">M&B $/ton</th>
+                  <th style="text-align:right;padding:5px 8px;font-weight:600;">Fat $/lb</th>
+                  <th style="text-align:right;padding:5px 8px;font-weight:600;">Other $/lb</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${weeks.map((w, i) => `
+                  <tr style="border-bottom:1px solid #1a1a1a;${i % 2 === 0 ? '' : 'background:rgba(255,255,255,0.02);'}">
+                    <td style="padding:4px 8px;color:#ccc;">${w.week}</td>
+                    <td style="padding:4px 8px;color:#888;">${w.date || '—'}</td>
+                    <td style="padding:4px 8px;text-align:right;color:#fff;">${w.corn ? parseFloat(w.corn).toFixed(2) : '—'}</td>
+                    <td style="padding:4px 8px;text-align:right;color:#fff;">${w.sbm ? parseFloat(w.sbm).toFixed(2) : '—'}</td>
+                    <td style="padding:4px 8px;text-align:right;color:#fff;">${w.mb ? parseFloat(w.mb).toFixed(2) : '—'}</td>
+                    <td style="padding:4px 8px;text-align:right;color:#fff;">${w.fat ? parseFloat(w.fat).toFixed(4) : '—'}</td>
+                    <td style="padding:4px 8px;text-align:right;color:#fff;">${w.other ? parseFloat(w.other).toFixed(2) : '—'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>` : `<p style="color:#555;font-size:0.85em;margin-top:8px;">No weekly data — import an XLS settlement to populate.</p>`;
+
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 12px;';
+        overlay.innerHTML = `
+          <div style="background:#141414;border:1px solid #22c55e44;border-radius:14px;width:100%;max-width:640px;padding:24px;position:relative;margin:auto;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <div>
+                <h2 style="color:#22c55e;margin:0;font-size:1.2em;">📄 Settlement Detail</h2>
+                <div style="color:#555;font-size:0.8em;margin-top:2px;">Flock #${flock ? flock.id : '—'} &nbsp;|&nbsp; ${s && s.settlementNum ? 'Settlement #' + s.settlementNum : 'Not yet imported'}</div>
+              </div>
+              <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:1px solid #333;border-radius:6px;color:#888;font-size:1.2em;cursor:pointer;padding:4px 10px;line-height:1;">✕</button>
+            </div>
+
+            ${!s ? `<div style="text-align:center;padding:40px 0;color:#555;">
+              <div style="font-size:2em;margin-bottom:12px;">📂</div>
+              <div style="font-size:0.95em;">No settlement data yet.</div>
+              <div style="font-size:0.82em;color:#444;margin-top:6px;">Import an XLS settlement sheet using the button on the flock form.</div>
+            </div>` : `
+
+            ${sectionHeader('🐦 Flock Summary')}
+            ${field('Settlement #', 'settlementNum', 'text', '', '')}
+            ${field('PO #', 'poNumber', 'text', '', '')}
+            ${field('Live Weight (lbs)', 'liveWeight', 'number', '1')}
+            ${field('Age at Processing', 'age', 'number', '1', 'days')}
+            ${field('Avg Daily Gain', 'avgDailyGain', 'number', '0.0001', 'lbs/day')}
+            ${field('Livability', 'livabilityPct', 'number', '0.01', '%')}
+            ${field('Net Pay Weight', 'netPayWeight', 'number', '1', 'lbs')}
+            ${field('Net Avg Bird Weight', 'netAvgBirdWt', 'number', '0.01', 'lbs')}
+
+            ${sectionHeader('💀 Condemn Breakdown')}
+            ${field('DOA Head Count', 'doaHead', 'number', '1')}
+            ${field('DOA Lbs', 'doaLbs', 'number', '1', 'lbs')}
+            ${field('Head Condemn Count', 'headCondemnCount', 'number', '1')}
+            ${field('Head Condemn Lbs', 'headCondemnLbs', 'number', '1', 'lbs')}
+            ${field('Parts Condemn Lbs', 'partsCondemnLbs', 'number', '1', 'lbs')}
+            ${field('Total Condemn + DOA Lbs', 'totalCondemnLbs', 'number', '1', 'lbs')}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;">
+              <div style="background:#1a1a1a;border-radius:7px;padding:8px 12px;text-align:center;">
+                <div style="color:#888;font-size:0.72em;text-transform:uppercase;margin-bottom:3px;">% DOA</div>
+                <div style="color:#ef4444;font-weight:700;">${s.pctDoa ? pct(s.pctDoa) : '—'}</div>
+              </div>
+              <div style="background:#1a1a1a;border-radius:7px;padding:8px 12px;text-align:center;">
+                <div style="color:#888;font-size:0.72em;text-transform:uppercase;margin-bottom:3px;">% Head Condemn</div>
+                <div style="color:#f97316;font-weight:700;">${s.pctHeadCondemn ? pct(s.pctHeadCondemn) : '—'}</div>
+              </div>
+              <div style="background:#1a1a1a;border-radius:7px;padding:8px 12px;text-align:center;">
+                <div style="color:#888;font-size:0.72em;text-transform:uppercase;margin-bottom:3px;">% Parts Condemn</div>
+                <div style="color:#f97316;font-weight:700;">${s.pctPartsCondemn ? pct(s.pctPartsCondemn) : '—'}</div>
+              </div>
+              <div style="background:#1a1a1a;border-radius:7px;padding:8px 12px;text-align:center;">
+                <div style="color:#888;font-size:0.72em;text-transform:uppercase;margin-bottom:3px;">% Total Grower</div>
+                <div style="color:#ef4444;font-weight:700;">${s.pctTotalCondemn ? pct(s.pctTotalCondemn) : '—'}</div>
+              </div>
+            </div>
+
+            ${sectionHeader('🌾 Feed Performance')}
+            ${field('Feed Conversion (FCR)', 'feedConv', 'number', '0.001')}
+            ${field('Feed Lbs per Bird', 'feedLbsPerBird', 'number', '0.001', 'lbs')}
+            ${field('Feed Cost per Ton', 'feedCostPerTon', 'number', '0.01', '$/ton')}
+            ${field('Feed Cost per Ton (incl. M&D)', 'feedCostPerTonMD', 'number', '0.01', '$/ton')}
+            ${field('Feed Payment per Net Live Lb', 'feedPayPerLb', 'number', '0.000001', '$/lb')}
+            <div style="margin-top:8px;background:#1a1a1a;border-radius:7px;padding:10px 12px;">
+              <div style="color:#22c55e;font-size:0.72em;font-weight:700;text-transform:uppercase;margin-bottom:8px;">Weighted Avg Ingredient Costs</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.83em;">
+                <div><span style="color:#888;">Corn:</span> <span style="color:#fff;">${s.avgCornPricePerBu ? '$' + parseFloat(s.avgCornPricePerBu).toFixed(4) + '/bu' : '—'}</span></div>
+                <div><span style="color:#888;">SBM:</span> <span style="color:#fff;">${s.avgSbmPricePerTon ? '$' + parseFloat(s.avgSbmPricePerTon).toFixed(2) + '/ton' : '—'}</span></div>
+                <div><span style="color:#888;">M&B:</span> <span style="color:#fff;">${s.avgMbPricePerTon ? '$' + parseFloat(s.avgMbPricePerTon).toFixed(2) + '/ton' : '—'}</span></div>
+                <div><span style="color:#888;">Fat:</span> <span style="color:#fff;">${s.avgFatPricePerLb ? '$' + parseFloat(s.avgFatPricePerLb).toFixed(4) + '/lb' : '—'}</span></div>
+              </div>
+            </div>
+
+            ${sectionHeader('💵 Payment Breakdown (per net live lb)')}
+            <div style="background:#1a1a1a;border-radius:8px;padding:12px;font-size:0.88em;">
+              ${[
+                ['Feed Payment', 'payFeed'],
+                ['Poult Payment', 'payPoult'],
+                ['Fuel Payment', 'payFuel'],
+                ['Fixed Cost', 'payFixed'],
+                ['NAE Payment', 'payNAE'],
+                ['GAP Payment', 'payGAP'],
+                ['Market Bonus', 'payMarketBonus'],
+                ['Grower Condemn', 'payCondemn'],
+              ].map(([label, key]) => s[key] ? `
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #222;">
+                  <span style="color:#aaa;">${label}</span>
+                  <input type="number" value="${s[key]}" step="0.0001"
+                    onchange="app._settlementEdit('${key}', this.value)"
+                    style="width:90px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;color:#22c55e;padding:2px 6px;font-size:0.9em;text-align:right;">
+                </div>` : '').join('')}
+              ${s.deductLiveHaul ? `
+                <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #222;">
+                  <span style="color:#ef4444;">Live Haul Deduction</span>
+                  <input type="number" value="${s.deductLiveHaul}" step="0.0001"
+                    onchange="app._settlementEdit('deductLiveHaul', this.value)"
+                    style="width:90px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;color:#ef4444;padding:2px 6px;font-size:0.9em;text-align:right;">
+                </div>` : ''}
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid #22c55e33;margin-top:4px;">
+                <span style="color:#fff;font-weight:700;">Grower Payment/lb</span>
+                <span style="color:#22c55e;font-weight:700;font-size:1.05em;">${s.subtotalPayPerLb ? '$' + parseFloat(s.subtotalPayPerLb).toFixed(4) : '—'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                <span style="color:#888;">Subtotal Gross Payment</span>
+                <span style="color:#fff;">${s.subtotalGross ? '$' + parseFloat(s.subtotalGross).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span>
+              </div>
+              ${s.deductSDPoultry ? `<div style="display:flex;justify-content:space-between;padding:4px 0;">
+                <span style="color:#888;">SD Poultry Deduction</span>
+                <span style="color:#ef4444;">-$${Math.abs(parseFloat(s.deductSDPoultry)).toFixed(2)}</span>
+              </div>` : ''}
+              <div style="display:flex;justify-content:space-between;padding:6px 0;border-top:2px solid #22c55e33;margin-top:4px;">
+                <span style="color:#fff;font-weight:700;">Net Live Payment</span>
+                <span style="color:#22c55e;font-weight:700;font-size:1.1em;">${s.netLivePayment ? '$' + parseFloat(s.netLivePayment).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span>
+              </div>
+            </div>
+
+            ${sectionHeader('📈 Weekly Ingredient Prices')}
+            ${weeklyTable}
+
+            <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end;">
+              <button onclick="this.closest('[style*=fixed]').remove()" style="background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#888;padding:10px 20px;cursor:pointer;font-size:0.9em;">Cancel</button>
+              <button onclick="app._saveSettlement(this)" style="background:#22c55e;border:none;border-radius:8px;color:#000;padding:10px 24px;cursor:pointer;font-size:0.9em;font-weight:700;">💾 Save Settlement</button>
+            </div>
+            `}
+          </div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+      }
+
+      _settlementEdit(key, value) {
+        if (!this.currentFlock) return;
+        if (!this.currentFlock.settlement) this.currentFlock.settlement = {};
+        const num = parseFloat(value);
+        this.currentFlock.settlement[key] = isNaN(num) ? value : num;
+      }
+
+      async _saveSettlement(btn) {
+        if (!this.currentFlock || !this.currentFlock.settlement) return;
+        btn.disabled = true; btn.textContent = '⏳ Saving…';
+        try {
+          await db.collection('users').doc(this.user.uid)
+            .collection('flocks').doc(this.currentFlock.docId)
+            .update({ settlement: this.currentFlock.settlement });
+          // Close modal overlay if this was called from one
+          const overlay = btn.closest('[style*="position:fixed"]');
+          if (overlay) overlay.remove();
+          this.showToast('✓ Settlement detail saved!');
+          this.render();
+        } catch(e) {
+          this.showToast('❌ Save failed: ' + e.message, 'error');
+          btn.disabled = false; btn.textContent = '💾 Save Settlement';
+        }
+      }
+
       showConfirmModal(title, message, onConfirm, isDanger = true) {
         // V2.0: Use the new custom confirm dialog
         this.showConfirm({
@@ -5910,6 +6118,8 @@
                 }
               });
               
+              // Seed _savedExpInvQtys so we can diff on save (deep copy)
+              data._savedExpInvQtys = JSON.parse(JSON.stringify(data.expInvQtys || {}));
               return data;
             } catch (docError) {
               console.error('Error processing flock document:', docError);
@@ -7873,9 +8083,15 @@
               <button class="flock-tab-btn ${this.flockTab === 'daily' ? 'active' : ''}" onclick="app.flockTab='daily'; app.loadDailyLogs(); app.render();">
                 📅 Daily Log
               </button>
+              <button class="flock-tab-btn ${this.flockTab === 'settlement' ? 'active' : ''}" onclick="app.flockTab='settlement'; app.render();">
+                📄 Settlement
+              </button>
+              <button class="flock-tab-btn ${this.flockTab === 'report' ? 'active' : ''}" onclick="app.flockTab='report'; app.render();">
+                🖨️ Old Style Report
+              </button>
             </div>
 
-            ${this.flockTab === 'daily' ? this.renderDailyInput() : `
+            ${this.flockTab === 'daily' ? this.renderDailyInput() : this.flockTab === 'settlement' ? this.renderSettlementTab() : this.flockTab === 'report' ? this.renderOldStyleReport() : `
               <div class="arduino-card">
                 <h1 class="profit-big ${profitClass}">${this.fmt(metrics.profit)}</h1>
                 <p style="text-align:center; color: #888;">TOTAL PROFIT</p>
@@ -7919,6 +8135,13 @@
                 <div class="metric-item">
                   <div class="metric-label">Paid per lb</div>
                   <div class="metric-value">${this.currentFlock.pricePerLb ? parseFloat(this.currentFlock.pricePerLb).toFixed(4) : 0}</div>
+                </div>
+                <div class="metric-item" onclick="app.flockTab='settlement'; app.render();" style="cursor:pointer; border-color:${this.currentFlock.settlement ? '#22c55e55' : '#2a2a2a'}; background:${this.currentFlock.settlement ? 'rgba(34,197,94,0.06)' : 'transparent'};">
+                  <div class="metric-label">Settlement</div>
+                  <div class="metric-value" style="font-size:${this.currentFlock.settlement ? '1em' : '1.4em'}; color:${this.currentFlock.settlement ? '#22c55e' : '#444'};">
+                    ${this.currentFlock.settlement ? '📄 #' + (this.currentFlock.settlement.settlementNum || '—') : '＋'}
+                  </div>
+                  ${this.currentFlock.settlement ? `<div style="font-size:0.7em;color:#666;margin-top:2px;">tap to view</div>` : `<div style="font-size:0.65em;color:#555;margin-top:2px;">VIEW DETAIL</div>`}
                 </div>
               </div>
             </div>
@@ -8127,6 +8350,526 @@
           `}
           </div>
         `;
+      }
+
+      renderOldStyleReport() {
+        const f = this.currentFlock;
+        const s = f.settlement || {};
+        const metrics = this.calculateMetrics(f);
+        const today = new Date().toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
+        const ageDays = metrics.ageDays || 0;
+        const ageWeeks = Math.floor(ageDays / 7);
+        const ageRemDays = Math.round(ageDays % 7);
+
+        // Helpers
+        const d = (v, dec=2) => (v !== null && v !== undefined && v !== 0 && !isNaN(v)) ? parseFloat(v).toFixed(dec) : '0.' + '0'.repeat(dec);
+        const m = (v, dec=2) => (v !== null && v !== undefined && !isNaN(v)) ? '$' + Math.abs(parseFloat(v)).toFixed(dec) : '$0.' + '0'.repeat(dec);
+        const n = (v) => (v !== null && v !== undefined && !isNaN(v) && v !== 0) ? parseFloat(v).toLocaleString() : '0';
+        const pct = (v) => (v !== null && v !== undefined && !isNaN(v)) ? d(parseFloat(v)*100, 2) + '%' : '0.00%';
+
+        // Derived values
+        const totalLbsSold = f.shipped && f.weight ? f.shipped * f.weight : (s.netPayWeight || 0);
+        const liveWt = s.liveWeight || totalLbsSold;
+        const netLbs = s.netPayWeight || totalLbsSold;
+        const grossLbs = liveWt || netLbs;
+        const feedLbs = f.feedLbs || 0;
+        const fcrGross = grossLbs > 0 ? feedLbs / grossLbs : 0;
+        const fcrNet   = netLbs > 0   ? feedLbs / netLbs   : 0;
+        const totalExp = metrics.totalExp;
+        const totalFeedCost = f.fCost || 0;
+        const totalHealthCost = (f.meds || 0) + (f.water || 0) + (f.clean || 0) + (f.pest || 0);
+        const totalRunningCost = totalExp - totalFeedCost - totalHealthCost;
+        const pricePerGrossLb = grossLbs > 0 ? f.revenue / grossLbs : 0;
+        const pricePerNetLb   = netLbs > 0   ? f.revenue / netLbs   : (f.pricePerLb || 0);
+        const pricePerHead    = f.shipped > 0 ? f.revenue / f.shipped : 0;
+        const profitRatio     = f.revenue > 0 ? (metrics.profit / f.revenue * 100) : 0;
+
+        // Feed cost per lb
+        const feedCostGross = grossLbs > 0 ? totalFeedCost / grossLbs : 0;
+        const feedCostNet   = netLbs > 0   ? totalFeedCost / netLbs   : 0;
+        const feedCostAllowed = s.feedPayPerLb || 0;
+        const totalCostNet  = netLbs > 0   ? totalExp / netLbs : 0;
+        const avgCostPerTon = feedLbs > 0  ? (totalFeedCost / feedLbs) * 2000 : (s.feedCostPerTon || 0);
+        const totalTonFeed  = feedLbs / 2000;
+
+        // Contract allowance from settlement
+        const payFeed    = s.payFeed    || 0;
+        const payPoult   = s.payPoult   || 0;
+        const payFixed   = s.payFixed   || 0;
+        const payNAE     = s.payNAE     || 0;
+        const payGAP     = s.payGAP     || 0;
+        const payFuel    = s.payFuel    || 0;
+        const basePrice  = s.subtotalPayPerLb || f.pricePerLb || 0;
+        const liveHaulDed = s.deductLiveHaul || 0;
+
+        // Inventory sub-items for expense line detail
+        const expInvQtys = f.expInvQtys || {};
+        const getSubItems = (dataKey) => {
+          const qMap = expInvQtys[dataKey] || {};
+          return Object.entries(qMap).map(([itemId, qty]) => {
+            const item = (this.inventoryItems || []).find(i => i.docId === itemId);
+            if (!item || !qty) return null;
+            const q = parseFloat(qty) || 0;
+            const cost = q * parseFloat(item.costPer || 0);
+            const perBird = f.shipped > 0 ? q / f.shipped : 0;
+            return { name: item.name, units: q, perBird, costPer: item.costPer, unit: item.unit, total: cost };
+          }).filter(Boolean);
+        };
+        const feedItems    = getSubItems('fCost');
+        const medsItems    = getSubItems('meds');
+        const waterItems   = getSubItems('water');
+        const cleanItems   = getSubItems('clean');
+        const pestItems    = getSubItems('pest');
+        const equipItems   = getSubItems('equip');
+        const repairItems  = getSubItems('repairs');
+        const laborItems   = getSubItems('labor');
+        const shavingItems = getSubItems('shavings');
+
+        // Row helper for detail lines
+        const detailRow = (name, units, perBird, costPer, unitLabel, total, grossLbs, netLbs, shipped) => {
+          const perGross = grossLbs > 0 ? total / grossLbs : 0;
+          const perNet   = netLbs > 0   ? total / netLbs   : 0;
+          const perBirdCost = shipped > 0 ? total / shipped : 0;
+          return `<tr>
+            <td style="padding:1px 6px;color:#222;">${name}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${units > 0 ? parseFloat(units).toFixed(1) : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${perBird > 0 ? perBird.toFixed(3) : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${costPer ? parseFloat(costPer).toFixed(4) + '/' + (unitLabel||'') : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;font-weight:600;">${total > 0 ? '$' + total.toFixed(2) : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${perGross > 0 ? perGross.toFixed(5) : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${perNet > 0 ? perNet.toFixed(5) : ''}</td>
+            <td style="padding:1px 6px;text-align:right;color:#222;">${perBirdCost > 0 ? perBirdCost.toFixed(2) : ''}</td>
+          </tr>`;
+        };
+
+        const subtotalRow = (label, total, grossLbs, netLbs, shipped, bg='#c8e6c9') => {
+          const perGross = grossLbs > 0 ? total / grossLbs : 0;
+          const perNet   = netLbs > 0   ? total / netLbs   : 0;
+          const perBirdCost = shipped > 0 ? total / shipped : 0;
+          return `<tr style="background:${bg};font-weight:700;">
+            <td colspan="4" style="padding:2px 6px;color:#000;">${label}</td>
+            <td style="padding:2px 6px;text-align:right;color:#000;">$${total.toFixed(2)}</td>
+            <td style="padding:2px 6px;text-align:right;color:#000;">${perGross.toFixed(5)}</td>
+            <td style="padding:2px 6px;text-align:right;color:#000;">${perNet.toFixed(5)}</td>
+            <td style="padding:2px 6px;text-align:right;color:#000;">${perBirdCost.toFixed(2)}</td>
+          </tr>`;
+        };
+
+        const rs = `
+          <div id="old-style-report" style="font-family:'Courier New',Courier,monospace;background:#f5f5f0;color:#111;padding:16px;border-radius:4px;font-size:1.35em;line-height:1.45;">
+
+            <!-- Print Button -->
+            <div class="no-print" style="text-align:right;margin-bottom:12px;">
+              <button onclick="app.printOldStyleReport()" style="background:#336633;border:none;border-radius:6px;color:#fff;padding:8px 20px;font-size:0.95em;font-weight:700;cursor:pointer;">🖨️ Print Report</button>
+            </div>
+
+            <!-- Header -->
+            <div style="text-align:center;border-bottom:2px solid #336633;padding-bottom:6px;margin-bottom:10px;">
+              <div style="font-size:0.85em;border:1px solid #000;display:inline-block;padding:1px 8px;margin-bottom:4px;">${this.settings.farmName || 'Farm'}</div>
+              <div style="font-size:1.3em;font-weight:700;letter-spacing:1px;">Full Flock(s) Summary</div>
+              <div style="font-size:0.95em;font-weight:700;">Flock Number ${f.id || '—'} : ${f.barn || ''}</div>
+              <div style="font-size:0.75em;color:#555;margin-top:2px;">Printed ${today}</div>
+            </div>
+
+            <!-- Top section: Farm Stats + Plant/Processing + Condemn (3 columns) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start;">
+
+              <!-- Farm Statistics -->
+              <div style="border:1px solid #336633;padding:6px;">
+                <div style="background:#336633;color:#fff;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;">Farm Statistics</div>
+                ${[
+                  ['Hatch Date', f.startedDate || '—'],
+                  ['Poults Placed', n(f.placed)],
+                  ['Total Head Sold', n(f.shipped)],
+                  ['Total Lbs. Sold', n(Math.round(totalLbsSold))],
+                  ['Avg. Weight (Farm Sales)', d(f.weight,2)],
+                  ['Livability (Gross Head)', pct(f.placed > 0 ? f.shipped/f.placed : 0)],
+                  ['Lbs / Sq. Feet', f.barnSqFt > 0 ? d(totalLbsSold/f.barnSqFt,2) : '—'],
+                  ['Sq. Ft / Bird (Finisher)', f.shipped > 0 && f.barnSqFt > 0 ? d(f.barnSqFt/f.shipped,2) : '—'],
+                ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;"><span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}
+              </div>
+
+              <!-- Plant/Processing Statistics -->
+              <div style="border:1px solid #336633;padding:6px;">
+                <div style="background:#336633;color:#fff;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;">Plant/Processing Statistics</div>
+                ${[
+                  ['Market Date', f.shippedDate || '—'],
+                  ['Avg. Age', ageDays > 0 ? ageWeeks + ' Weeks and ' + ageRemDays + ' Days' : '—'],
+                  ['Days to Market', ageDays > 0 ? Math.round(ageDays) : '—'],
+                  ['Head Shipped', n(f.shipped)],
+                  ['Lbs. Shipped', n(Math.round(netLbs))],
+                  ['Avg. Live Weight', d(f.weight,2)],
+                  ['Avg. Daily Gain', d(s.avgDailyGain || metrics.adg,4)],
+                  ['Feed Conv./Gross Lb.', d(fcrGross,3)],
+                  ['Feed Conv./Net Lb.', d(fcrNet,3)],
+                ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;"><span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}
+              </div>
+
+              <!-- Condemn -->
+              <div style="border:1px solid #336633;padding:6px;">
+                <div style="background:#336633;color:#fff;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;">Condemn</div>
+                ${[
+                  ['Head DOA', n(s.doaHead)],
+                  ['Lbs. DOA', n(s.doaLbs)],
+                  ["DOA's Rate (Head)", pct(s.pctDoa)],
+                  ["DOA's Rate (lbs.)", s.doaLbs && grossLbs ? pct(s.doaLbs/grossLbs) : '—'],
+                  ['Head Condemn', n(s.headCondemnCount)],
+                  ['Parts Cond.(lbs.)', n(s.partsCondemnLbs)],
+                  ['Total Lbs. Cond.', n(s.totalCondemnLbs)],
+                  ['Net Head', n(s.headCondemnCount ? f.shipped - s.headCondemnCount : f.shipped)],
+                  ['Net Pounds', n(Math.round(netLbs))],
+                  ['Condemn Rate (Head)', pct(s.pctHeadCondemn)],
+                  ['Condemn Rate (Parts)', pct(s.pctPartsCondemn)],
+                  ['Overall Cond. Rate w/DOA', pct(s.pctTotalCondemn)],
+                ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;font-size:0.9em;"><span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}
+              </div>
+            </div>
+
+            <!-- Contract Allowance + Feed Statistics + Revenue Statistics (3 columns) -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;align-items:start;">
+
+              <!-- Processor Contract Allowance -->
+              <div style="border:1px solid #336633;padding:6px;">
+                <div style="background:#336633;color:#fff;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;">Processor Contract Allowance</div>
+                ${[
+                  ['Feed Cost', m(payFeed,5)],
+                  ['Poult Cost', m(payPoult,5)],
+                  ['Fixed Cost', m(payFixed,5)],
+                  ['NAE Payment', m(payNAE,5)],
+                  ['GAP Payment', m(payGAP,5)],
+                  ['Fuel Payment', m(payFuel,5)],
+                  ['Base Price', m(basePrice,5)],
+                  ['Live Haul Ded.', m(liveHaulDed,5)],
+                  ['Price / Net Lb.', m(pricePerNetLb,5)],
+                ].filter(([,v]) => v !== '$0.00000').map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;"><span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span></div>`).join('')}
+              </div>
+
+              <!-- Feed Statistics -->
+              <div style="border:1px solid #336633;padding:6px;">
+                <div style="background:#336633;color:#fff;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;">Feed Statistics</div>
+                ${[
+                  ['Feed Cost / Lb. (Gross)', m(feedCostGross,5)],
+                  ['Feed Cost / Lb. (Net)', m(feedCostNet,5)],
+                  ['Feed Cost (Allowed)', m(feedCostAllowed,5)],
+                  ['Feed Cost Difference', m(feedCostAllowed > 0 ? feedCostAllowed - feedCostNet : 0,5)],
+                  ['Total Cost / Lb. (Net)', m(totalCostNet,5)],
+                  ['Feed Conv./Gross Lb.', d(fcrGross,3)],
+                  ['Feed Conv./Net Lb.', d(fcrNet,3)],
+                  ['Avg. Cost / Ton Feed', m(avgCostPerTon,2)],
+                  ['Total Lbs. Feed', n(Math.round(feedLbs))],
+                  ['Total Ton Feed', d(totalTonFeed,2)],
+                ].map(([k,v]) => {
+                  const highlight = k.includes('Net)') || k.includes('Allowed') || k.includes('Total Cost');
+                  return `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;${highlight?'background:#ffff99;':''}"><span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span></div>`;
+                }).join('')}
+              </div>
+
+              <!-- Revenue Statistics -->
+              <div style="border:2px solid #cc0000;padding:6px;background:#fffde7;">
+                <div style="background:#f9a825;color:#000;font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;text-align:center;">Revenue Statistics</div>
+                ${[
+                  ['Price / Head', m(pricePerHead,3)],
+                  ['Price / Gross Lb.', m(pricePerGrossLb,5)],
+                  ['Price / Net Lb.', m(pricePerNetLb,5)],
+                  ['Profit Per Bird', m(metrics.profitPerBird,3)],
+                  ['Profit Per Pound', m(netLbs > 0 ? metrics.profit/netLbs : 0,3)],
+                  ['Profit Per Sq.Foot', m(metrics.profitPerSqFt,3)],
+                  ['Profit Ratio', d(profitRatio,2) + '%'],
+                  ['Total Income', m(f.revenue,2)],
+                  ['Total Expense', m(totalExp,2)],
+                  ['Net Income', m(metrics.profit,2)],
+                ].map(([k,v]) => `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ddd;font-size:0.9em;"><span style="color:#555;">${k}</span><span style="font-weight:700;color:${k==='Net Income'?(metrics.profit>=0?'#006600':'#cc0000'):'#000'}">${v}</span></div>`).join('')}
+              </div>
+            </div>
+
+            <!-- Detail Table -->
+            <table style="width:100%;border-collapse:collapse;font-size:1.1em;margin-bottom:6px;">
+              <thead>
+                <tr style="background:#336633;color:#fff;">
+                  <th style="padding:3px 6px;text-align:left;">Sub Account</th>
+                  <th style="padding:3px 6px;text-align:right;">Units</th>
+                  <th style="padding:3px 6px;text-align:right;">Units/Bird</th>
+                  <th style="padding:3px 6px;text-align:right;">Cost/Unit</th>
+                  <th style="padding:3px 6px;text-align:right;">Total</th>
+                  <th style="padding:3px 6px;text-align:right;">/Gross Lb.</th>
+                  <th style="padding:3px 6px;text-align:right;">/Net Lb.</th>
+                  <th style="padding:3px 6px;text-align:right;">/Bird</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- FEED -->
+                <tr style="background:#c8e6c9;"><td colspan="8" style="padding:2px 6px;font-weight:700;color:#000;">Feed</td></tr>
+                ${feedItems.length > 0 ? feedItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Complete Feed</td><td style="padding:2px 6px;text-align:right;color:#222;font-weight:600;">${m(totalFeedCost,2)}</td><td style="padding:2px 6px;text-align:right;color:#222;">${grossLbs>0?d(totalFeedCost/grossLbs,5):''}</td><td style="padding:2px 6px;text-align:right;color:#222;">${netLbs>0?d(totalFeedCost/netLbs,5):''}</td><td style="padding:2px 6px;text-align:right;color:#222;">${f.shipped>0?d(totalFeedCost/f.shipped,2):''}</td></tr>`}
+                ${subtotalRow('Total Feed Costs:', totalFeedCost, grossLbs, netLbs, f.shipped)}
+
+                <!-- HEALTH -->
+                <tr style="background:#b3e5fc;"><td colspan="8" style="padding:2px 6px;font-weight:700;color:#000;">Health</td></tr>
+                ${waterItems.length > 0 ? `<tr style="background:#e1f5fe;"><td colspan="8" style="padding:1px 6px;font-style:italic;color:#333;">Water Additive</td></tr>` + waterItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') : ''}
+                ${medsItems.length > 0 ? `<tr style="background:#e1f5fe;"><td colspan="8" style="padding:1px 6px;font-style:italic;color:#333;">Water Medication</td></tr>` + medsItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') : ''}
+                ${(waterItems.length === 0 && medsItems.length === 0 && (f.meds||0)+(f.water||0) > 0) ?
+                  `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Meds &amp; Water Additives</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${((f.meds||0)+(f.water||0)).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${cleanItems.length > 0 ? cleanItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  f.clean > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Cleaner &amp; Disinfect</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.clean||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${subtotalRow('Total Health Costs:', totalHealthCost, grossLbs, netLbs, f.shipped, '#b3e5fc')}
+
+                <!-- RUNNING EXPENSES -->
+                <tr style="background:#ffe0b2;"><td colspan="8" style="padding:2px 6px;font-weight:700;color:#000;">Running Expense</td></tr>
+                ${pestItems.length > 0 ? pestItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  f.pest > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Pest Control</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.pest||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.pCost > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Poults Bought</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.pCost||0).toFixed(2)}</td><td style="padding:2px 6px;text-align:right;">${grossLbs>0?d(f.pCost/grossLbs,5):''}</td><td style="padding:2px 6px;text-align:right;">${netLbs>0?d(f.pCost/netLbs,5):''}</td><td style="padding:2px 6px;text-align:right;">${f.shipped>0?d(f.pCost/f.shipped,2):''}</td></tr>` : ''}
+                ${repairItems.length > 0 ? repairItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  f.repairs > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Repair</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.repairs||0).toFixed(2)}</td><td style="padding:2px 6px;text-align:right;">${grossLbs>0?d(f.repairs/grossLbs,5):''}</td><td style="padding:2px 6px;text-align:right;">${netLbs>0?d(f.repairs/netLbs,5):''}</td><td style="padding:2px 6px;text-align:right;">${f.shipped>0?d(f.repairs/f.shipped,2):''}</td></tr>` : ''}
+                ${laborItems.length > 0 ? laborItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  f.labor > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Labor</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.labor||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${shavingItems.length > 0 ? shavingItems.map(i => detailRow(i.name, i.units, i.perBird, i.costPer, i.unit, i.total, grossLbs, netLbs, f.shipped)).join('') :
+                  f.shavings > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Shavings &amp; Trucking</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.shavings||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.equip > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Equipment</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.equip||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.electric > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Electric</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.electric||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.gas > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Natural Gas/Propane</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.gas||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.loading > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Turkey Loading</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.loading||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.depreciation > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Depreciation</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.depreciation||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${f.fuel > 0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">Fuel</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${(f.fuel||0).toFixed(2)}</td><td></td><td></td><td></td></tr>` : ''}
+                ${[f.misc1,f.misc2,f.misc3,f.misc4].map((v,i) => v>0 ? `<tr><td colspan="4" style="padding:2px 6px;color:#555;">${this.settings['labelMisc'+(i+1)]||'Misc '+(i+1)}</td><td style="padding:2px 6px;text-align:right;font-weight:600;">$${v.toFixed(2)}</td><td></td><td></td><td></td></tr>` : '').join('')}
+                ${subtotalRow('Total Running Expense Costs:', totalRunningCost, grossLbs, netLbs, f.shipped, '#ffe0b2')}
+              </tbody>
+              <tfoot>
+                <tr style="background:#cc0000;color:#fff;font-weight:700;font-size:1em;">
+                  <td colspan="4" style="padding:4px 6px;">Total Costs:</td>
+                  <td style="padding:4px 6px;text-align:right;">$${totalExp.toFixed(2)}</td>
+                  <td style="padding:4px 6px;text-align:right;">${grossLbs>0?d(totalExp/grossLbs,5):''}</td>
+                  <td style="padding:4px 6px;text-align:right;">${netLbs>0?d(totalExp/netLbs,5):''}</td>
+                  <td style="padding:4px 6px;text-align:right;">${f.shipped>0?d(totalExp/f.shipped,2):''}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style="text-align:center;color:#888;font-size:0.75em;margin-top:8px;border-top:1px solid #ccc;padding-top:6px;">
+              FlockPro &nbsp;·&nbsp; ${this.settings.farmName || ''} &nbsp;·&nbsp; ${today}
+            </div>
+          </div>`;
+        return rs;
+      }
+
+      printOldStyleReport() {
+        const content = document.getElementById('old-style-report');
+        if (!content) return;
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html><html><head><title>Flock Report</title>
+          <style>
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body {
+              margin: 0;
+              padding: 0;
+              width: 100%;
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              background: #fff;
+              color: #111;
+              font-size: 8pt;
+              line-height: 1.25;
+            }
+            .no-print { display: none !important; }
+            div[style*="display:grid"], div[style*="display: grid"] {
+              display: grid !important;
+              align-items: start !important;
+            }
+            table { width: 100%; border-collapse: collapse; font-size: 7.5pt; }
+            th, td { padding: 1px 3px !important; }
+            @page { size: letter portrait; margin: 0.2in 0.2in; }
+            @media print {
+              body { margin: 0; padding: 0; }
+              .no-print { display: none !important; }
+              table { page-break-inside: avoid; }
+            }
+          </style>
+        </head><body>${content.innerHTML}
+          <script>setTimeout(function(){ window.print(); }, 500); ${'<'}/script>
+        </body></html>`);
+        win.document.close();
+        win.focus();
+      }
+
+      renderSettlementTab() {
+        const s = this.currentFlock && this.currentFlock.settlement;
+        const flock = this.currentFlock;
+
+        const pct = (v) => (v !== null && v !== undefined && v !== 0) ? (parseFloat(v) * 100).toFixed(2) + '%' : '—';
+        const field = (label, key, type = 'number', step = '0.001', suffix = '') => {
+          const val = s ? (s[key] !== null && s[key] !== undefined ? s[key] : '') : '';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1a1a1a;gap:8px;flex-wrap:wrap;">
+              <span style="color:#888;font-size:0.88em;flex:1;min-width:140px;">${label}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="${type}" value="${val}" step="${step}"
+                  onchange="app._settlementEdit('${key}', this.value)"
+                  style="width:130px;background:#111;border:1px solid #2a2a2a;border-radius:6px;color:#fff;padding:6px 10px;font-size:0.9em;text-align:right;">
+                ${suffix ? `<span style="color:#555;font-size:0.82em;min-width:40px;">${suffix}</span>` : ''}
+              </div>
+            </div>`;
+        };
+
+        const sectionHeader = (title) =>
+          `<div style="color:#22c55e;font-size:0.8em;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid #22c55e33;">${title}</div>`;
+
+        const weeks = s && s.weeklyIngredients && s.weeklyIngredients.length > 0 ? s.weeklyIngredients : [];
+        const weeklyTable = weeks.length > 0 ? `
+          <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid #222;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.82em;min-width:500px;">
+              <thead>
+                <tr style="background:#1a1a1a;">
+                  <th style="text-align:center;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">Wk</th>
+                  <th style="text-align:left;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">Date</th>
+                  <th style="text-align:right;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">Corn $/bu</th>
+                  <th style="text-align:right;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">SBM $/ton</th>
+                  <th style="text-align:right;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">M&amp;B $/ton</th>
+                  <th style="text-align:right;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">Fat $/lb</th>
+                  <th style="text-align:right;padding:8px;color:#22c55e;font-weight:600;border-bottom:1px solid #222;">Other $/lb</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${weeks.map((w, i) => `
+                  <tr style="${i % 2 !== 0 ? 'background:rgba(255,255,255,0.02);' : ''}">
+                    <td style="padding:6px 8px;text-align:center;color:#ccc;">${w.week}</td>
+                    <td style="padding:6px 8px;color:#777;">${w.date || '—'}</td>
+                    <td style="padding:6px 8px;text-align:right;color:#fff;">${w.corn ? parseFloat(w.corn).toFixed(2) : '—'}</td>
+                    <td style="padding:6px 8px;text-align:right;color:#fff;">${w.sbm ? parseFloat(w.sbm).toFixed(2) : '—'}</td>
+                    <td style="padding:6px 8px;text-align:right;color:#fff;">${w.mb ? parseFloat(w.mb).toFixed(2) : '—'}</td>
+                    <td style="padding:6px 8px;text-align:right;color:#fff;">${w.fat ? parseFloat(w.fat).toFixed(4) : '—'}</td>
+                    <td style="padding:6px 8px;text-align:right;color:#fff;">${w.other ? parseFloat(w.other).toFixed(2) : '—'}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>` : `<p style="color:#555;font-size:0.85em;margin-top:10px;">No weekly data — import an XLS settlement to populate.</p>`;
+
+        if (!s) {
+          return `
+            <div class="arduino-card" style="text-align:center;padding:60px 20px;">
+              <div style="font-size:3em;margin-bottom:16px;">📂</div>
+              <div style="color:#ccc;font-size:1.05em;font-weight:600;margin-bottom:8px;">No Settlement Data Yet</div>
+              <div style="color:#555;font-size:0.88em;margin-bottom:24px;">Import an XLS settlement sheet to populate this page.</div>
+              <button onclick="document.getElementById('settlement-pdf-input').click()"
+                style="background:#22c55e;border:none;border-radius:8px;padding:12px 28px;color:#000;font-weight:700;cursor:pointer;font-size:0.95em;">
+                📂 Import Settlement Sheet
+              </button>
+            </div>`;
+        }
+
+        return `
+          <div class="arduino-card">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:4px;">
+              <div>
+                <h3 style="margin:0;color:#22c55e;">📄 Settlement Detail</h3>
+                <div style="color:#555;font-size:0.8em;margin-top:2px;">
+                  Flock #${flock.id} &nbsp;·&nbsp; Settlement #${s.settlementNum || '—'} &nbsp;·&nbsp; PO #${s.poNumber || '—'}
+                  ${s.importedAt ? `&nbsp;·&nbsp; <span style="color:#444;">Imported ${new Date(s.importedAt).toLocaleDateString()}</span>` : ''}
+                </div>
+              </div>
+              <button onclick="document.getElementById('settlement-pdf-input').click()"
+                style="background:#1a2a1a;border:1px solid #22c55e44;border-radius:7px;padding:6px 14px;color:#22c55e;font-size:0.82em;cursor:pointer;white-space:nowrap;">
+                🔄 Re-import
+              </button>
+            </div>
+
+            ${sectionHeader('🐦 Flock Summary')}
+            ${field('Settlement #', 'settlementNum', 'text', '', '')}
+            ${field('PO #', 'poNumber', 'text', '', '')}
+            ${field('Live Weight', 'liveWeight', 'number', '1', 'lbs')}
+            ${field('Age at Processing', 'age', 'number', '1', 'days')}
+            ${field('Avg Daily Gain', 'avgDailyGain', 'number', '0.0001', 'lbs/day')}
+            ${field('Livability', 'livabilityPct', 'number', '0.01', '%')}
+            ${field('Net Pay Weight', 'netPayWeight', 'number', '1', 'lbs')}
+            ${field('Net Avg Bird Weight', 'netAvgBirdWt', 'number', '0.001', 'lbs')}
+
+            ${sectionHeader('💀 Condemn Breakdown')}
+            ${field('DOA Head Count', 'doaHead', 'number', '1')}
+            ${field('DOA Lbs', 'doaLbs', 'number', '1', 'lbs')}
+            ${field('Head Condemn Count', 'headCondemnCount', 'number', '1')}
+            ${field('Head Condemn Lbs', 'headCondemnLbs', 'number', '1', 'lbs')}
+            ${field('Parts Condemn Lbs', 'partsCondemnLbs', 'number', '1', 'lbs')}
+            ${field('Total Condemn + DOA Lbs', 'totalCondemnLbs', 'number', '1', 'lbs')}
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;">
+              ${[
+                ['% DOA', s.pctDoa, '#ef4444'],
+                ['% Head Condemn', s.pctHeadCondemn, '#f97316'],
+                ['% Parts Condemn', s.pctPartsCondemn, '#f97316'],
+                ['% Total Grower', s.pctTotalCondemn, '#ef4444'],
+              ].map(([label, val, color]) => `
+                <div style="background:#1a1a1a;border-radius:8px;padding:10px 14px;text-align:center;">
+                  <div style="color:#666;font-size:0.72em;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">${label}</div>
+                  <div style="color:${color};font-weight:700;font-size:1.1em;">${val ? pct(val) : '—'}</div>
+                </div>`).join('')}
+            </div>
+
+            ${sectionHeader('🌾 Feed Performance')}
+            ${field('Feed Conversion (FCR)', 'feedConv', 'number', '0.001')}
+            ${field('Feed Lbs per Bird', 'feedLbsPerBird', 'number', '0.001', 'lbs')}
+            ${field('Feed Cost per Ton', 'feedCostPerTon', 'number', '0.01', '$/ton')}
+            ${field('Feed Cost per Ton (incl. M&D)', 'feedCostPerTonMD', 'number', '0.01', '$/ton')}
+            ${field('Feed Payment per Net Live Lb', 'feedPayPerLb', 'number', '0.000001', '$/lb')}
+            <div style="background:#1a1a1a;border-radius:8px;padding:12px 16px;margin-top:10px;">
+              <div style="color:#22c55e;font-size:0.75em;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Weighted Avg Ingredient Costs</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.88em;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:#666;">Corn</span><span style="color:#fff;">${s.avgCornPricePerBu ? '$' + parseFloat(s.avgCornPricePerBu).toFixed(4) + '/bu' : '—'}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#666;">SBM</span><span style="color:#fff;">${s.avgSbmPricePerTon ? '$' + parseFloat(s.avgSbmPricePerTon).toFixed(2) + '/ton' : '—'}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#666;">M&amp;B</span><span style="color:#fff;">${s.avgMbPricePerTon ? '$' + parseFloat(s.avgMbPricePerTon).toFixed(2) + '/ton' : '—'}</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:#666;">Fat</span><span style="color:#fff;">${s.avgFatPricePerLb ? '$' + parseFloat(s.avgFatPricePerLb).toFixed(4) + '/lb' : '—'}</span></div>
+              </div>
+            </div>
+
+            ${sectionHeader('💵 Payment Breakdown')}
+            <div style="background:#1a1a1a;border-radius:8px;padding:14px 16px;">
+              <div style="color:#666;font-size:0.75em;text-align:right;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Per Net Live Lb</div>
+              ${[
+                ['Feed Payment', 'payFeed', '#ccc'],
+                ['Poult Payment', 'payPoult', '#ccc'],
+                ['Fuel Payment', 'payFuel', '#ccc'],
+                ['Fixed Cost', 'payFixed', '#ccc'],
+                ['NAE Payment', 'payNAE', '#ccc'],
+                ['GAP Payment', 'payGAP', '#ccc'],
+                ['Market Bonus', 'payMarketBonus', '#ccc'],
+                ['Grower Condemn', 'payCondemn', '#ccc'],
+              ].filter(([,key]) => s[key]).map(([label, key, color]) => `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #222;">
+                  <span style="color:${color};font-size:0.88em;">${label}</span>
+                  <input type="number" value="${s[key]}" step="0.0001"
+                    onchange="app._settlementEdit('${key}', this.value)"
+                    style="width:100px;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:5px;color:#22c55e;padding:4px 8px;font-size:0.88em;text-align:right;">
+                </div>`).join('')}
+              ${s.deductLiveHaul ? `
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #222;">
+                  <span style="color:#ef4444;font-size:0.88em;">Live Haul Deduction</span>
+                  <input type="number" value="${s.deductLiveHaul}" step="0.0001"
+                    onchange="app._settlementEdit('deductLiveHaul', this.value)"
+                    style="width:100px;background:#0d0d0d;border:1px solid #2a2a2a;border-radius:5px;color:#ef4444;padding:4px 8px;font-size:0.88em;text-align:right;">
+                </div>` : ''}
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid #22c55e44;margin-top:6px;">
+                <span style="color:#fff;font-weight:700;">Grower Payment / lb</span>
+                <span style="color:#22c55e;font-weight:700;font-size:1.1em;">${s.subtotalPayPerLb ? '$' + parseFloat(s.subtotalPayPerLb).toFixed(4) : '—'}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #222;">
+                <span style="color:#888;font-size:0.88em;">Subtotal Gross Payment</span>
+                <span style="color:#fff;">${s.subtotalGross ? '$' + parseFloat(s.subtotalGross).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span>
+              </div>
+              ${s.deductSDPoultry ? `
+                <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #222;">
+                  <span style="color:#888;font-size:0.88em;">SD Poultry Deduction</span>
+                  <span style="color:#ef4444;">-$${Math.abs(parseFloat(s.deductSDPoultry)).toFixed(2)}</span>
+                </div>` : ''}
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-top:2px solid #22c55e44;margin-top:4px;">
+                <span style="color:#fff;font-weight:700;font-size:1.05em;">Net Live Payment</span>
+                <span style="color:#22c55e;font-weight:700;font-size:1.2em;">${s.netLivePayment ? '$' + parseFloat(s.netLivePayment).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) : '—'}</span>
+              </div>
+            </div>
+
+            ${sectionHeader('📈 Weekly Ingredient Prices')}
+            ${weeklyTable}
+
+            <button onclick="app._saveSettlement(this)" style="width:100%;margin-top:24px;background:#22c55e;border:none;border-radius:10px;color:#000;padding:14px;cursor:pointer;font-size:1em;font-weight:700;">
+              💾 Save Settlement
+            </button>
+          </div>`;
       }
 
       async setBirdsLeftSource(source) {
@@ -8534,6 +9277,64 @@
           }
         } catch(e) {
           console.error('deductFromInventory error:', e);
+        }
+      }
+
+      // Adjust inventory quantities when flock expense inv-qtys change on save.
+      // Compares newQtys vs savedQtys and applies the delta to each inventory item.
+      async adjustInventoryFromFlockSave(newQtys, savedQtys) {
+        if (!newQtys || !this.user) return;
+        // Collect all item IDs across all expense fields
+        const allItemIds = new Set();
+        Object.values(newQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => allItemIds.add(id)));
+        Object.values(savedQtys || {}).forEach(qMap => Object.keys(qMap || {}).forEach(id => allItemIds.add(id)));
+
+        for (const itemId of allItemIds) {
+          // Sum qty across all expense fields for this item
+          let newTotal = 0;
+          let savedTotal = 0;
+          Object.values(newQtys).forEach(qMap => { newTotal += parseFloat((qMap || {})[itemId] || 0); });
+          Object.values(savedQtys || {}).forEach(qMap => { savedTotal += parseFloat((qMap || {})[itemId] || 0); });
+
+          const delta = newTotal - savedTotal; // positive = more used, negative = returned
+          if (Math.abs(delta) < 0.0001) continue; // no change
+
+          const item = (this.inventoryItems || []).find(i => i.docId === itemId);
+          if (!item) continue;
+
+          const oldQty = parseFloat(item.qty) || 0;
+          const newInvQty = Math.max(0, oldQty - delta);
+          item.qty = newInvQty;
+
+          try {
+            await db.collection('users').doc(this.user.uid)
+              .collection('invItems').doc(itemId)
+              .update({ qty: newInvQty });
+
+            // Keep linked expense item in sync
+            if (item.linkedExpItemId) {
+              const expItem = (this.expenseItems || []).find(e => e.docId === item.linkedExpItemId);
+              if (expItem) {
+                expItem.qty = newInvQty;
+                expItem.amount = newInvQty * (parseFloat(expItem.costPer) || 0);
+                await db.collection('users').doc(this.user.uid)
+                  .collection('expItems').doc(item.linkedExpItemId)
+                  .update({ qty: newInvQty, amount: expItem.amount });
+              }
+            }
+
+            if (delta > 0) {
+              // Items were used — warn if low/empty
+              if (newInvQty <= 0) {
+                this.showToast('📦 ' + (item.name || 'Item') + ' is now out of stock!', 'error');
+              } else if (newInvQty < 5) {
+                this.showToast('📦 ' + (item.name || 'Item') + ': ' + newInvQty.toFixed(1) + ' ' + (item.unit || '') + ' remaining');
+              }
+            }
+            // delta < 0 means qty was reduced (returned to inventory) — no toast needed
+          } catch(e) {
+            console.error('adjustInventoryFromFlockSave error:', e);
+          }
         }
       }
 
@@ -10393,9 +11194,10 @@
               </div>
             </div>
 
-            ${this.selectedFlockIds.length > 0 ? `
-              <div style="text-align: center; margin: 24px 0;">
+            ${this.selectedFlockIds.length > 0 && this.reportGenerated ? `
+              <div style="text-align: center; margin: 24px 0; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
                 <button onclick="app.openReportView('summary')" class="btn btn-primary" style="padding: 16px 32px; font-size: 1.1em; background:#22c55e; color:#000; font-weight:700;">🖨️ Print Preview</button>
+                <button onclick="app.printOldStyleSummaryReport()" style="padding: 16px 32px; font-size: 1.1em; background:#336633; border:none; border-radius:8px; color:#fff; font-weight:700; cursor:pointer;">🖨️ Old Style Report</button>
               </div>
             ` : ''}
             ${summary ? `
@@ -10870,12 +11672,300 @@
             <div class="modern-card" id="report-print-card" style="background:#fff;color:#111;font-family:Arial,sans-serif;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
                 <button onclick="app.navigate('${backView}')" class="btn btn-secondary">← Back</button>
-                <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  ${this.reportSource === 'flock' && this.reportFlock ? `<button onclick="app.printOldStyleReportForFlock()" style="background:#336633;border:1px solid #336633;border-radius:6px;color:#fff;padding:8px 16px;font-weight:700;cursor:pointer;">🖨️ Old Style Report</button>` : ''}
+                  <button onclick="smartPrint()" class="btn btn-primary" style="background:#22c55e;color:#000;font-weight:700;">🖨️ Print Now</button>
+                </div>
               </div>
               ${reportContent}
             </div>
           </div>
         `;
+      }
+
+      printOldStyleReportForFlock() {
+        // Temporarily swap currentFlock to reportFlock, render the report HTML, then print it
+        const saved = this.currentFlock;
+        this.currentFlock = this.reportFlock;
+        const html = this.renderOldStyleReport();
+        this.currentFlock = saved;
+
+        // Create a temp div to get the inner content
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const content = tmp.querySelector('#old-style-report') || tmp.firstElementChild;
+        if (!content) return;
+
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html><html><head><title>Flock Report</title>
+          <style>
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; width: 100%; }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              background: #fff;
+              color: #111;
+              font-size: 10pt;
+              line-height: 1.3;
+            }
+            .no-print { display: none !important; }
+            div[style*="display:grid"], div[style*="display: grid"] { display: grid !important; }
+            table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+            th, td { padding: 2px 4px !important; }
+            @page { size: letter portrait; margin: 0.25in 0.25in; }
+            @media print {
+              body { margin: 0; padding: 0; }
+              .no-print { display: none !important; }
+              table { page-break-inside: avoid; }
+            }
+          </style>
+        </head><body>${content.innerHTML}
+          <script>setTimeout(function(){ window.print(); }, 500); ${'<'}/script>
+        </body></html>`);
+        win.document.close();
+        win.focus();
+      }
+
+      printOldStyleSummaryReport() {
+        const selectedFlocks = this.flocks.filter(f => this.selectedFlockIds.includes(f.docId));
+        if (selectedFlocks.length === 0) { this.showToast('Please select flocks first', 'error'); return; }
+
+        const s = this.calculateSummary(selectedFlocks);
+        const today = new Date().toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
+        const farmName = this.settings.farmName || 'Farm';
+
+        const d  = (v, dec=2) => (v && !isNaN(v)) ? parseFloat(v).toFixed(dec) : '0.'+'0'.repeat(dec);
+        const m  = (v, dec=2) => '$' + Math.abs(parseFloat(v)||0).toFixed(dec);
+        const n  = (v) => (parseFloat(v)||0).toLocaleString();
+        const pct = (v) => (parseFloat(v)||0).toFixed(2) + '%';
+
+        const totalLbsSold   = s.shipped * s.avgWeight;
+        const grossLbs       = totalLbsSold;
+        const netLbs         = totalLbsSold;
+        const feedLbs        = s.totalFeedLbs;
+        const totalFeedCost  = s.totalFeedCost;
+        const totalHealthCost = s.totalMeds + s.totalWater + s.totalClean + s.totalPest;
+        const totalRunning   = s.expenses - totalFeedCost - totalHealthCost;
+        const fcrGross       = grossLbs > 0 ? feedLbs / grossLbs : 0;
+        const feedCostNet    = netLbs   > 0 ? totalFeedCost / netLbs : 0;
+        const totalCostNet   = netLbs   > 0 ? s.expenses / netLbs : 0;
+        const avgCostPerTon  = feedLbs  > 0 ? (totalFeedCost / feedLbs) * 2000 : 0;
+        const pricePerNetLb  = netLbs   > 0 ? s.revenue / netLbs : s.avgPricePerLb;
+        const pricePerHead   = s.shipped > 0 ? s.revenue / s.shipped : 0;
+        const profitRatio    = s.revenue > 0 ? (s.profit / s.revenue * 100) : 0;
+
+        const row = (k, v, hl=false) =>
+          `<div style="display:flex;justify-content:space-between;padding:1px 0;border-bottom:1px dotted #ccc;${hl?'background:#ffff99;':''}">
+            <span style="color:#444;">${k}</span><span style="font-weight:600;">${v}</span>
+          </div>`;
+
+        const boxHeader = (title, yellow=false) =>
+          `<div style="background:${yellow?'#f9a825':'#336633'};color:${yellow?'#000':'#fff'};font-weight:700;padding:2px 6px;margin:-6px -6px 6px -6px;font-size:0.9em;${yellow?'text-align:center;':''}">${title}</div>`;
+
+        const subtotalRow = (label, total, bg='#c8e6c9') => {
+          const pGross = grossLbs > 0 ? total/grossLbs : 0;
+          const pNet   = netLbs   > 0 ? total/netLbs   : 0;
+          const pBird  = s.shipped > 0 ? total/s.shipped : 0;
+          return `<tr style="background:${bg};font-weight:700;color:#000;">
+            <td colspan="2" style="padding:2px 5px;">${label}</td>
+            <td style="padding:2px 5px;text-align:right;">$${total.toFixed(2)}</td>
+            <td style="padding:2px 5px;text-align:right;">${pGross.toFixed(5)}</td>
+            <td style="padding:2px 5px;text-align:right;">${pNet.toFixed(5)}</td>
+            <td style="padding:2px 5px;text-align:right;">${pBird.toFixed(2)}</td>
+          </tr>`;
+        };
+
+        const expRow = (label, total) => {
+          if (!total) return '';
+          const pGross = grossLbs > 0 ? total/grossLbs : 0;
+          const pNet   = netLbs   > 0 ? total/netLbs   : 0;
+          const pBird  = s.shipped > 0 ? total/s.shipped : 0;
+          return `<tr>
+            <td colspan="2" style="padding:1px 5px;color:#222;">${label}</td>
+            <td style="padding:1px 5px;text-align:right;font-weight:600;">$${total.toFixed(2)}</td>
+            <td style="padding:1px 5px;text-align:right;">${pGross.toFixed(5)}</td>
+            <td style="padding:1px 5px;text-align:right;">${pNet.toFixed(5)}</td>
+            <td style="padding:1px 5px;text-align:right;">${pBird.toFixed(2)}</td>
+          </tr>`;
+        };
+
+        // Individual flock rows
+        const flockTableRows = selectedFlocks.map(f => {
+          const fm = this.calculateMetrics(f);
+          const profitColor = fm.profit >= 0 ? '#006600' : '#cc0000';
+          return `<tr style="border-bottom:1px solid #ddd;">
+            <td style="padding:2px 5px;">#${this.escapeHtml(String(f.id||''))} ${this.escapeHtml(f.barn||'')}</td>
+            <td style="padding:2px 5px;text-align:right;">${n(f.placed)}</td>
+            <td style="padding:2px 5px;text-align:right;">${n(f.shipped)}</td>
+            <td style="padding:2px 5px;text-align:right;">${d(f.weight,2)}</td>
+            <td style="padding:2px 5px;text-align:right;">${d(fm.livability,1)}%</td>
+            <td style="padding:2px 5px;text-align:right;">${d(fm.fcr,3)}</td>
+            <td style="padding:2px 5px;text-align:right;">${d(fm.adg,4)}</td>
+            <td style="padding:2px 5px;text-align:right;">$${(fm.profitPerBird||0).toFixed(2)}</td>
+            <td style="padding:2px 5px;text-align:right;font-weight:700;color:${profitColor};">$${(fm.profit||0).toFixed(2)}</td>
+          </tr>`;
+        }).join('');
+
+        const html = `
+          <div style="font-family:'Courier New',Courier,monospace;background:#f5f5f0;color:#111;padding:12px;font-size:0.9em;line-height:1.35;">
+
+            <!-- Header -->
+            <div style="text-align:center;border-bottom:2px solid #336633;padding-bottom:6px;margin-bottom:10px;">
+              <div style="font-size:0.85em;border:1px solid #000;display:inline-block;padding:1px 8px;margin-bottom:3px;">${farmName}</div>
+              <div style="font-size:1.3em;font-weight:700;letter-spacing:1px;">Full Flock(s) Summary</div>
+              <div style="font-size:0.95em;font-weight:700;">${selectedFlocks.length} Flock${selectedFlocks.length>1?'s':''} Selected</div>
+              <div style="font-size:0.75em;color:#555;margin-top:2px;">Printed ${today}</div>
+            </div>
+            <button onclick="window.print()" style="position:fixed;top:12px;right:16px;padding:10px 24px;font-size:1em;background:#336633;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🖨️ Print</button>
+
+            <!-- Row 1: Farm Stats + Processing + Condemn aggregates -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start;">
+              <div style="border:1px solid #336633;padding:6px;">
+                ${boxHeader('Farm Statistics')}
+                ${row('Flocks Included', selectedFlocks.length)}
+                ${row('Total Poults Placed', n(s.placed))}
+                ${row('Total Head Sold', n(s.shipped))}
+                ${row('Total Lbs. Sold', n(Math.round(totalLbsSold)))}
+                ${row('Avg. Weight', d(s.avgWeight,2) + ' lbs')}
+                ${row('Livability', pct(s.livability))}
+                ${row('Total Feed Used', n(Math.round(feedLbs)) + ' lbs')}
+                ${row('Total Ton Feed', d(feedLbs/2000,2))}
+              </div>
+              <div style="border:1px solid #336633;padding:6px;">
+                ${boxHeader('Performance Statistics')}
+                ${row('Avg. Age', d(s.avgAge,1) + ' days')}
+                ${row('Avg. Daily Gain', d(s.adg,4))}
+                ${row('Feed Conv./Gross Lb.', d(fcrGross,3))}
+                ${row('Feed Conv./Net Lb.', d(fcrGross,3))}
+                ${row('Avg. Weight', d(s.avgWeight,2) + ' lbs')}
+                ${row('Profit Per Bird', m(s.profitPerBird,3))}
+                ${row('Profit Per Sq.Foot', m(s.profitPerSqFt,3))}
+                ${row('Sq. Ft / Bird', d(s.sqFtPerBird,2))}
+              </div>
+              <div style="border:2px solid #cc0000;padding:6px;background:#fffde7;">
+                ${boxHeader('Revenue Statistics', true)}
+                ${row('Price / Head', m(pricePerHead,3))}
+                ${row('Price / Net Lb.', m(pricePerNetLb,5))}
+                ${row('Profit Per Bird', m(s.profitPerBird,3))}
+                ${row('Profit Per Pound', m(netLbs>0?s.profit/netLbs:0,3))}
+                ${row('Profit Ratio', d(profitRatio,2) + '%')}
+                ${row('Total Revenue', m(s.revenue,2))}
+                ${row('Total Expenses', m(s.expenses,2))}
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:2px solid #cc0000;margin-top:2px;">
+                  <span style="color:#555;font-weight:700;">Net Income</span>
+                  <span style="font-weight:700;color:${s.profit>=0?'#006600':'#cc0000'};">${m(s.profit,2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Feed Statistics + Expense Summary -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+              <div style="border:1px solid #336633;padding:6px;">
+                ${boxHeader('Feed Statistics')}
+                ${row('Feed Cost / Lb. (Net)', m(feedCostNet,5), true)}
+                ${row('Total Cost / Lb. (Net)', m(totalCostNet,5), true)}
+                ${row('Feed Conv./Gross Lb.', d(fcrGross,3))}
+                ${row('Avg. Cost / Ton Feed', m(avgCostPerTon,2))}
+                ${row('Total Lbs. Feed', n(Math.round(feedLbs)))}
+                ${row('Total Ton Feed', d(feedLbs/2000,2))}
+              </div>
+              <div style="border:1px solid #336633;padding:6px;">
+                ${boxHeader('Expense Summary')}
+                ${row(this.settings.feedLabel||'Total Feed Cost', m(totalFeedCost,2))}
+                ${row('Total Health Costs', m(totalHealthCost,2))}
+                ${row('Total Running Expenses', m(totalRunning,2))}
+                <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:2px solid #cc0000;margin-top:4px;background:#ffeeee;">
+                  <span style="font-weight:700;">Total Costs</span>
+                  <span style="font-weight:700;">$${s.expenses.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Expense detail table -->
+            <table style="width:100%;border-collapse:collapse;font-size:0.88em;margin-bottom:8px;">
+              <thead>
+                <tr style="background:#336633;color:#fff;">
+                  <th colspan="2" style="padding:3px 5px;text-align:left;">Expense Category</th>
+                  <th style="padding:3px 5px;text-align:right;">Total</th>
+                  <th style="padding:3px 5px;text-align:right;">/Gross Lb.</th>
+                  <th style="padding:3px 5px;text-align:right;">/Net Lb.</th>
+                  <th style="padding:3px 5px;text-align:right;">/Bird</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="background:#c8e6c9;"><td colspan="6" style="padding:2px 5px;font-weight:700;">Feed</td></tr>
+                ${expRow(this.settings.feedLabel||'Complete Feed', totalFeedCost)}
+                ${subtotalRow('Total Feed Costs:', totalFeedCost)}
+                <tr style="background:#b3e5fc;"><td colspan="6" style="padding:2px 5px;font-weight:700;">Health</td></tr>
+                ${expRow(this.settings.medsLabel||'Meds & Vaccines', s.totalMeds)}
+                ${expRow(this.settings.waterLabel||'Water Additives', s.totalWater)}
+                ${expRow(this.settings.cleanLabel||'Cleaner & Disinfect', s.totalClean)}
+                ${expRow(this.settings.pestLabel||'Pest Control', s.totalPest)}
+                ${subtotalRow('Total Health Costs:', totalHealthCost, '#b3e5fc')}
+                <tr style="background:#ffe0b2;"><td colspan="6" style="padding:2px 5px;font-weight:700;">Running Expense</td></tr>
+                ${expRow(this.settings.poultLabel||'Poults Bought', s.totalPoultCost)}
+                ${expRow(this.settings.repairsLabel||'Repair', s.totalRepairs)}
+                ${expRow(this.settings.laborLabel||'Labor', s.totalLabor)}
+                ${expRow(this.settings.shavingsLabel||'Shavings & Trucking', s.totalShavings)}
+                ${expRow(this.settings.equipLabel||'Equipment', s.totalEquip)}
+                ${expRow(this.settings.electricLabel||'Electric', s.totalElectric)}
+                ${expRow(this.settings.gasLabel||'Natural Gas/Propane', s.totalGas)}
+                ${expRow(this.settings.loadingLabel||'Turkey Loading', s.totalLoading)}
+                ${expRow(this.settings.depLabel||'Depreciation', s.totalDep)}
+                ${expRow(this.settings.fuelLabel||'Fuel', s.totalFuel)}
+                ${subtotalRow('Total Running Expense Costs:', totalRunning, '#ffe0b2')}
+              </tbody>
+              <tfoot>
+                <tr style="background:#cc0000;color:#fff;font-weight:700;">
+                  <td colspan="2" style="padding:4px 5px;">Total Costs:</td>
+                  <td style="padding:4px 5px;text-align:right;">$${s.expenses.toFixed(2)}</td>
+                  <td style="padding:4px 5px;text-align:right;">${grossLbs>0?d(s.expenses/grossLbs,5):''}</td>
+                  <td style="padding:4px 5px;text-align:right;">${netLbs>0?d(s.expenses/netLbs,5):''}</td>
+                  <td style="padding:4px 5px;text-align:right;">${s.shipped>0?d(s.expenses/s.shipped,2):''}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <!-- Individual flock breakdown -->
+            <div style="font-weight:700;background:#336633;color:#fff;padding:3px 6px;margin-bottom:4px;">Individual Flock Results</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
+              <thead>
+                <tr style="background:#eee;color:#111;">
+                  <th style="padding:3px 5px;text-align:left;">Flock / Barn</th>
+                  <th style="padding:3px 5px;text-align:right;">Placed</th>
+                  <th style="padding:3px 5px;text-align:right;">Shipped</th>
+                  <th style="padding:3px 5px;text-align:right;">Avg Wt</th>
+                  <th style="padding:3px 5px;text-align:right;">Livability</th>
+                  <th style="padding:3px 5px;text-align:right;">FCR</th>
+                  <th style="padding:3px 5px;text-align:right;">ADG</th>
+                  <th style="padding:3px 5px;text-align:right;">Profit/Bird</th>
+                  <th style="padding:3px 5px;text-align:right;">Net Profit</th>
+                </tr>
+              </thead>
+              <tbody>${flockTableRows}</tbody>
+            </table>
+
+            <div style="text-align:center;color:#888;font-size:0.75em;margin-top:8px;border-top:1px solid #ccc;padding-top:6px;">
+              FlockPro &nbsp;·&nbsp; ${farmName} &nbsp;·&nbsp; ${today}
+            </div>
+          </div>`;
+
+        const win = window.open('', '_blank');
+        win.document.write(`<!DOCTYPE html><html><head><title>Summary Report — ${farmName}</title>
+          <style>
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; width: 100%; }
+            body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #111; font-size: 7.5pt; line-height: 1.25; zoom: 0.62; }
+            div[style*="display:grid"], div[style*="display: grid"] { display: grid !important; }
+            table { width: 100%; border-collapse: collapse; font-size: 7pt; }
+            th, td { padding: 1px 3px !important; }
+            @page { size: letter portrait; margin: 0.2in 0.2in; }
+            @media print { body { margin: 0; padding: 0; } table { page-break-inside: avoid; } }
+          </style>
+        </head><body>${html}
+        </body></html>`);
+        win.document.close();
+        win.focus();
       }
 
 
@@ -12195,25 +13285,21 @@
 
       selectAllFlocks() {
         this.selectedFlockIds = this.flocks.map(f => f.docId);
-        
-        // Check all checkboxes without full re-render (prevents scroll jump)
+        this.reportGenerated = false;
         this.flocks.forEach(flock => {
           const checkbox = document.getElementById(`flock-${flock.docId}`);
           if (checkbox) checkbox.checked = true;
         });
-        
         this.updateExportButtons();
       }
 
       selectNoFlocks() {
         this.selectedFlockIds = [];
-        
-        // Uncheck all checkboxes without full re-render (prevents scroll jump)
+        this.reportGenerated = false;
         this.flocks.forEach(flock => {
           const checkbox = document.getElementById(`flock-${flock.docId}`);
           if (checkbox) checkbox.checked = false;
         });
-        
         this.updateExportButtons();
       }
 
@@ -12224,8 +13310,7 @@
         } else {
           this.selectedFlockIds.push(docId);
         }
-        
-        // Update export button states without full re-render (prevents scroll jump)
+        this.reportGenerated = false;
         this.updateExportButtons();
       }
       
@@ -12276,11 +13361,8 @@
           this.showToast('Please select at least one flock to generate a report.', 'error');
           return;
         }
-        
-        // Scroll to top to show the report
+        this.reportGenerated = true;
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        // Re-render to show the report with selected flocks
         this.render();
       }
 
@@ -12519,24 +13601,78 @@
         }
 
         this.currentFlock = updatedFlock;
-        
-        this.saveFlock(updatedFlock).then((success) => {
+
+        // ── Check for over-stock before saving ──
+        const _newQtys   = updatedFlock.expInvQtys || {};
+        const _savedQtys = updatedFlock._savedExpInvQtys || {};
+        const overStockWarnings = [];
+        const _allItemIds = new Set();
+        Object.values(_newQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => _allItemIds.add(id)));
+        Object.values(_savedQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => _allItemIds.add(id)));
+        for (const itemId of _allItemIds) {
+          let newTotal = 0, savedTotal = 0;
+          Object.values(_newQtys).forEach(qMap => { newTotal += parseFloat((qMap || {})[itemId] || 0); });
+          Object.values(_savedQtys).forEach(qMap => { savedTotal += parseFloat((qMap || {})[itemId] || 0); });
+          const delta = newTotal - savedTotal;
+          if (delta <= 0) continue;
+          const item = (this.inventoryItems || []).find(i => i.docId === itemId);
+          if (!item) continue;
+          const onHand = parseFloat(item.qty) || 0;
+          if (delta > onHand) {
+            overStockWarnings.push(
+              `• ${item.name}: using ${delta} ${item.unit || ''} but only ${onHand} ${item.unit || ''} in stock`
+            );
+          }
+        }
+
+        const doSave = () => {
+          this.saveFlock(updatedFlock).then(async (success) => {
           if (success) {
             this.showToast('✓ Changes saved successfully!');
             this.clearDraft();
+
+            // ── Auto-adjust inventory from expInvQtys delta ──
+            const newQtys  = updatedFlock.expInvQtys  || {};
+            const savedQtys = updatedFlock._savedExpInvQtys || {};
+            await this.adjustInventoryFromFlockSave(newQtys, savedQtys);
+            // Update baseline so next save diffs correctly
+            updatedFlock._savedExpInvQtys = JSON.parse(JSON.stringify(newQtys));
             // DON'T re-render - it wipes the form! Data is already saved.
           }
           // Error toast is already shown by saveFlock if it fails
-        }).catch(error => {
-          this.showToast('Failed to save: ' + error.message, 'error');
-        }).finally(() => {
-          // Reset loading state
+          }).catch(error => {
+            this.showToast('Failed to save: ' + error.message, 'error');
+          }).finally(() => {
+            // Reset loading state
+            this.isSaving = false;
+            if (submitBtn) {
+              submitBtn.innerHTML = originalBtnText;
+              submitBtn.disabled = false;
+            }
+          });
+        }; // end doSave
+
+        if (overStockWarnings.length > 0) {
+          // Reset button while modal is open
           this.isSaving = false;
-          if (submitBtn) {
-            submitBtn.innerHTML = originalBtnText;
-            submitBtn.disabled = false;
-          }
-        });
+          if (submitBtn) { submitBtn.innerHTML = originalBtnText; submitBtn.disabled = false; }
+          this.showConfirm({
+            title: '⚠️ Low Inventory Warning',
+            message: 'You are using more than you have in stock:<br><br>' + overStockWarnings.join('<br>') + '<br><br>Inventory will be set to 0 for these items. Save anyway?',
+            icon: '⚠️',
+            confirmText: 'Save Anyway',
+            cancelText: 'Cancel',
+            isDanger: false
+          }).then(confirmed => {
+            if (confirmed) {
+              this.isSaving = true;
+              if (submitBtn) { submitBtn.innerHTML = '⏳ Saving...'; submitBtn.disabled = true; }
+              doSave();
+            }
+          });
+        } else {
+          doSave();
+        }
       }
 
       handleSaveNotes(event) {
@@ -12994,6 +14130,73 @@
             data.liveHaul     = findVal('Standard Live Haul Charge', 4);
             if (data.liveHaul && data.liveHaul < 0) data.liveHaul = Math.abs(data.liveHaul);
 
+            // ---- Extended settlement detail ----
+            const settlNumRow = rows.find(r => r[7] && String(r[7]).toLowerCase().includes('settlement #'));
+            data.settlementNum = settlNumRow ? settlNumRow[8] : null;
+            const poRow = rows.find(r => r[7] && String(r[7]).toLowerCase().includes('po #'));
+            data.poNumber = poRow ? poRow[8] : null;
+
+            // Flock summary extras
+            data.liveWeight   = findVal('Live Weight:', 1);
+            data.age          = findVal('Age', 1);
+            data.avgDailyGain = findVal('Avg. Daily Gain', 1);
+            data.livabilityPct = (() => { const r = rows.find(r => r[4] && String(r[4]).includes('% Liv')); return r ? parseFloat(String(r[4]).replace(/[^0-9.]/g,'')) : null; })();
+            data.netPayWeight = findVal4('Net Pay Weight Sold');
+            data.netAvgBirdWt = findVal4('Net Average Bird Weight');
+
+            // Condemn
+            data.doaHead      = (() => { const r = rows.find(r => r[0] && String(r[0]).toLowerCase().includes("doa")); return r ? r[1] : null; })();
+            data.doaLbs       = (() => { const r = rows.find(r => r[0] && String(r[0]).toLowerCase().includes("doa")); return r ? r[2] : null; })();
+            data.headCondemnCount = (() => { const r = rows.find(r => r[0] && String(r[0]).toLowerCase().includes('head condemn') && !String(r[0]).toLowerCase().includes('total')); return r ? r[1] : null; })();
+            data.headCondemnLbs   = (() => { const r = rows.find(r => r[0] && String(r[0]).toLowerCase().includes('head condemn') && !String(r[0]).toLowerCase().includes('total')); return r ? r[2] : null; })();
+            data.partsCondemnLbs  = (() => { const r = rows.find(r => r[0] && String(r[0]).toLowerCase().includes('parts condemn')); return r ? r[2] : null; })();
+            data.totalCondemnLbs  = findVal4('Total Condemn & DOA');
+            data.pctDoa           = findVal4('% DOA');
+            data.pctHeadCondemn   = findVal4('% Head Condemn');
+            data.pctPartsCondemn  = findVal4('% Parts Condemn');
+            data.pctGrowerCondemn = findVal4('% Grower Condemn');
+            data.pctTotalCondemn  = findVal4('% Total Grower Condemn');
+
+            // Feed performance extras
+            data.feedCostPerTon   = findVal4(' - Feed Cost per Ton');
+            data.feedCostPerTonMD = findVal4(' - Feed Cost per Ton with M');
+            data.feedPayPerLb     = findVal4(' - Feed Payment per Net Live Pound');
+            data.avgCornPricePerBu = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. Corn price')); return r ? r[4] : null; })();
+            data.avgSbmPricePerTon = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. SBM price')); return r ? r[4] : null; })();
+            data.avgMbPricePerTon  = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. M & B price')); return r ? r[4] : null; })();
+            data.avgFatPricePerLb  = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. Fat price')); return r ? r[4] : null; })();
+
+            // Payment breakdown per-lb (col 5)
+            data.payFeed        = findVal5('Feed Payment');
+            data.payPoult       = findVal5('Poult Payment');
+            data.payFuel        = findVal5('Fuel Payment');
+            data.payCondemn     = findVal5('Grower Condemn');
+            data.payFixed       = findVal5('Fixed Cost Payment');
+            data.payNAE         = findVal5('NAE Payment');
+            data.payGAP         = findVal5('GAP Payment');
+            data.payMarketBonus = findVal5('Market Bonus');
+            data.deductLiveHaul = findVal5('Standard Live Haul Charge');
+            data.subtotalPayPerLb = findVal5('Grower Payment per Net Live Pound');
+            data.subtotalGross  = findVal5('Subtotal Grower Payment');
+            data.deductSDPoultry = findVal5('less S.D. Poultry');
+            const poultPayRow = rows.find(r => r[0] && String(r[0]).toLowerCase().includes('poult payment'));
+            data.poultAvgPrice  = poultPayRow ? poultPayRow[4] : null;
+            const fuelPayRow = rows.find(r => r[0] && String(r[0]).toLowerCase().includes('fuel payment'));
+            data.fuelAvgPriceGal = fuelPayRow ? fuelPayRow[4] : null;
+
+            // Weekly ingredient prices from Feed Calc sheet
+            const fcSheet = wb.Sheets['Feed Calc'];
+            if (fcSheet) {
+              const fcRows = window.XLSX.utils.sheet_to_json(fcSheet, { header: 1, defval: null, cellDates: true });
+              data.weeklyIngredients = [];
+              for (let i = 0; i < fcRows.length; i++) {
+                const r = fcRows[i];
+                if (r[1] && typeof r[1] === 'number' && r[1] >= 1 && r[1] <= 30 && r[0] instanceof Date) {
+                  data.weeklyIngredients.push({ week: r[1], date: toISO(r[0]), corn: r[2]||null, sbm: r[5]||null, mb: r[8]||null, fat: r[9]||null, other: r[10]||null });
+                }
+              }
+            }
+
           } else {
             // ---- PDF.js fallback (for text-based PDFs) ----
             if (!window.pdfjsLib) {
@@ -13065,6 +14268,62 @@
               filled.push('FCR → Notes');
             }
           }
+
+          // ---- Store full settlement detail object ----
+          const n = (v) => v !== null && v !== undefined ? parseFloat(v) || 0 : null;
+          this.currentFlock.settlement = {
+            settlementNum:    data.settlementNum ? String(data.settlementNum) : '',
+            poNumber:         data.poNumber ? String(data.poNumber) : '',
+            // Flock summary
+            liveWeight:       n(data.liveWeight),
+            age:              n(data.age),
+            avgDailyGain:     n(data.avgDailyGain),
+            livabilityPct:    n(data.livabilityPct),
+            netPayWeight:     n(data.netPayWeight),
+            netAvgBirdWt:     n(data.netAvgBirdWt),
+            // Condemn
+            doaHead:          n(data.doaHead),
+            doaLbs:           n(data.doaLbs),
+            headCondemnCount: n(data.headCondemnCount),
+            headCondemnLbs:   n(data.headCondemnLbs),
+            partsCondemnLbs:  n(data.partsCondemnLbs),
+            totalCondemnLbs:  n(data.totalCondemnLbs),
+            pctDoa:           n(data.pctDoa),
+            pctHeadCondemn:   n(data.pctHeadCondemn),
+            pctPartsCondemn:  n(data.pctPartsCondemn),
+            pctGrowerCondemn: n(data.pctGrowerCondemn),
+            pctTotalCondemn:  n(data.pctTotalCondemn),
+            // Feed performance
+            feedConv:         n(data.feedConv),
+            feedLbsPerBird:   n(data.feedLbsPerBird),
+            feedCostPerTon:   n(data.feedCostPerTon),
+            feedCostPerTonMD: n(data.feedCostPerTonMD),
+            feedPayPerLb:     n(data.feedPayPerLb),
+            avgCornPricePerBu: n(data.avgCornPricePerBu),
+            avgSbmPricePerTon: n(data.avgSbmPricePerTon),
+            avgMbPricePerTon:  n(data.avgMbPricePerTon),
+            avgFatPricePerLb:  n(data.avgFatPricePerLb),
+            // Payment breakdown
+            payFeed:          n(data.payFeed),
+            payPoult:         n(data.payPoult),
+            poultAvgPrice:    n(data.poultAvgPrice),
+            payFuel:          n(data.payFuel),
+            fuelAvgPriceGal:  n(data.fuelAvgPriceGal),
+            payCondemn:       n(data.payCondemn),
+            payFixed:         n(data.payFixed),
+            payNAE:           n(data.payNAE),
+            payGAP:           n(data.payGAP),
+            payMarketBonus:   n(data.payMarketBonus),
+            deductLiveHaul:   n(data.deductLiveHaul),
+            subtotalPayPerLb: n(data.subtotalPayPerLb),
+            subtotalGross:    n(data.subtotalGross),
+            deductSDPoultry:  n(data.deductSDPoultry),
+            netLivePayment:   n(data.revenue),
+            // Weekly ingredients
+            weeklyIngredients: data.weeklyIngredients || [],
+            importedAt: new Date().toISOString()
+          };
+          filled.push('Settlement Detail');
 
           if (filled.length === 0) {
             this.showToast('⚠️ No matching data found — check this is a Dakota Provisions settlement', 'error');
