@@ -7151,6 +7151,17 @@
         area._swipeInit = true;
         let startX = 0, startY = 0, tracking = false;
         area.addEventListener('touchstart', (e) => {
+          // Don't track swipe if touch starts inside a horizontally scrollable element
+          let el = e.target;
+          while (el && el !== area) {
+            const style = window.getComputedStyle(el);
+            const overflowX = style.overflowX;
+            if ((overflowX === 'auto' || overflowX === 'scroll') && el.scrollWidth > el.clientWidth) {
+              tracking = false;
+              return;
+            }
+            el = el.parentElement;
+          }
           startX = e.touches[0].clientX;
           startY = e.touches[0].clientY;
           tracking = true;
@@ -11897,7 +11908,8 @@
             </div>
 
             <!-- Expense detail table -->
-            <table style="width:100%;border-collapse:collapse;font-size:0.88em;margin-bottom:8px;">
+            <div class="tbl-scroll">
+            <table style="width:100%;border-collapse:collapse;font-size:0.88em;margin-bottom:8px;min-width:500px;">
               <thead>
                 <tr style="background:#336633;color:#fff;">
                   <th colspan="2" style="padding:3px 5px;text-align:left;">Expense Category</th>
@@ -11940,10 +11952,12 @@
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             <!-- Individual flock breakdown -->
             <div style="font-weight:700;background:#336633;color:#fff;padding:3px 6px;margin-bottom:4px;">Individual Flock Results</div>
-            <table style="width:100%;border-collapse:collapse;font-size:0.85em;">
+            <div class="tbl-scroll">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85em;min-width:600px;">
               <thead>
                 <tr style="background:#eee;color:#111;">
                   <th style="padding:3px 5px;text-align:left;">Flock / Barn</th>
@@ -11959,6 +11973,7 @@
               </thead>
               <tbody>${flockTableRows}</tbody>
             </table>
+            </div>
 
             <div style="text-align:center;color:#888;font-size:0.75em;margin-top:8px;border-top:1px solid #ccc;padding-top:6px;">
               FlockPro &nbsp;·&nbsp; ${farmName} &nbsp;·&nbsp; ${today}
@@ -11967,15 +11982,34 @@
 
         const win = window.open('', '_blank');
         win.document.write(`<!DOCTYPE html><html><head><title>Summary Report — ${farmName}</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
           <style>
             *, *::before, *::after { box-sizing: border-box; }
-            html, body { margin: 0; padding: 0; width: 100%; }
-            body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #111; font-size: 7.5pt; line-height: 1.25; zoom: 0.62; }
-            div[style*="display:grid"], div[style*="display: grid"] { display: grid !important; }
-            table { width: 100%; border-collapse: collapse; font-size: 7pt; }
-            th, td { padding: 1px 3px !important; }
+            html, body { margin: 0; padding: 8px; width: 100%; }
+            body { font-family: 'Courier New', Courier, monospace; background: #fff; color: #111; font-size: 13px; line-height: 1.4; }
+            .rpt-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+            .rpt-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+            .tbl-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 8px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { padding: 3px 5px; }
+            .no-print { display: block; }
+            @media (max-width: 700px) {
+              body { font-size: 11px; padding: 4px; }
+              .rpt-grid-3 { grid-template-columns: 1fr; }
+              .rpt-grid-2 { grid-template-columns: 1fr; }
+              table { font-size: 10px; }
+              th, td { padding: 2px 3px; }
+            }
             @page { size: letter portrait; margin: 0.2in 0.2in; }
-            @media print { body { margin: 0; padding: 0; } table { page-break-inside: avoid; } }
+            @media print {
+              body { font-size: 8pt; padding: 0; }
+              .rpt-grid-3 { grid-template-columns: 1fr 1fr 1fr !important; }
+              .rpt-grid-2 { grid-template-columns: 1fr 1fr !important; }
+              .no-print { display: none !important; }
+              table { font-size: 7.5pt; }
+              th, td { padding: 1px 3px !important; }
+              table { page-break-inside: avoid; }
+            }
           </style>
         </head><body>${html}
         </body></html>`);
