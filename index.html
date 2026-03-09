@@ -939,20 +939,33 @@
       gap: 0;
       margin-bottom: 20px;
       border-radius: 12px;
-      overflow: hidden;
+      overflow-x: auto;
+      overflow-y: hidden;
       border: 2px solid rgba(255,255,255,0.1);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .flock-tabs::-webkit-scrollbar { display: none; }
+    .rpt-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:8px; align-items:start; }
+    .rpt-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; align-items:start; }
+    @media (max-width: 700px) {
+      .rpt-grid-3 { grid-template-columns: 1fr; }
+      .rpt-grid-2 { grid-template-columns: 1fr; }
+      #old-style-report { font-size: 1em !important; padding: 8px !important; }
+      #old-style-report table { font-size: 0.85em; }
     }
     .flock-tab-btn {
       flex: 1;
-      padding: 14px 20px;
+      padding: 10px 8px;
       background: transparent;
       border: none;
       color: #888;
-      font-size: 1em;
+      font-size: 0.75em;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.2s;
       border-right: 1px solid rgba(255,255,255,0.1);
+      white-space: nowrap;
     }
     .flock-tab-btn:last-child { border-right: none; }
     .flock-tab-btn.active { background: #22c55e; color: #000; }
@@ -8078,16 +8091,16 @@
             <!-- Flock Tab Switcher -->
             <div class="flock-tabs">
               <button class="flock-tab-btn ${this.flockTab === 'data' ? 'active' : ''}" onclick="app.flockTab='data'; app.render();">
-                📋 Flock Data
+                📋 Data
               </button>
               <button class="flock-tab-btn ${this.flockTab === 'daily' ? 'active' : ''}" onclick="app.flockTab='daily'; app.loadDailyLogs(); app.render();">
-                📅 Daily Log
+                📅 Daily
               </button>
               <button class="flock-tab-btn ${this.flockTab === 'settlement' ? 'active' : ''}" onclick="app.flockTab='settlement'; app.render();">
                 📄 Settlement
               </button>
               <button class="flock-tab-btn ${this.flockTab === 'report' ? 'active' : ''}" onclick="app.flockTab='report'; app.render();">
-                🖨️ Old Style Report
+                🖨️ Old Style
               </button>
             </div>
 
@@ -8472,7 +8485,7 @@
             </div>
 
             <!-- Top section: Farm Stats + Plant/Processing + Condemn (3 columns) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start;">
+            <div class="rpt-grid-3">
 
               <!-- Farm Statistics -->
               <div style="border:1px solid #336633;padding:6px;">
@@ -8526,7 +8539,7 @@
             </div>
 
             <!-- Contract Allowance + Feed Statistics + Revenue Statistics (3 columns) -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;align-items:start;">
+            <div class="rpt-grid-3" style="margin-bottom:10px;">
 
               <!-- Processor Contract Allowance -->
               <div style="border:1px solid #336633;padding:6px;">
@@ -8583,7 +8596,8 @@
             </div>
 
             <!-- Detail Table -->
-            <table style="width:100%;border-collapse:collapse;font-size:1.1em;margin-bottom:6px;">
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+            <table style="width:100%;border-collapse:collapse;font-size:1.1em;margin-bottom:6px;min-width:500px;">
               <thead>
                 <tr style="background:#336633;color:#fff;">
                   <th style="padding:3px 6px;text-align:left;">Sub Account</th>
@@ -8643,6 +8657,7 @@
                 </tr>
               </tfoot>
             </table>
+            </div>
 
             <div style="text-align:center;color:#888;font-size:0.75em;margin-top:8px;border-top:1px solid #ccc;padding-top:6px;">
               FlockPro &nbsp;·&nbsp; ${this.settings.farmName || ''} &nbsp;·&nbsp; ${today}
@@ -11819,7 +11834,7 @@
             <button onclick="window.print()" style="position:fixed;top:12px;right:16px;padding:10px 24px;font-size:1em;background:#336633;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.3);">🖨️ Print</button>
 
             <!-- Row 1: Farm Stats + Processing + Condemn aggregates -->
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;align-items:start;">
+            <div class="rpt-grid-3">
               <div style="border:1px solid #336633;padding:6px;">
                 ${boxHeader('Farm Statistics')}
                 ${row('Flocks Included', selectedFlocks.length)}
@@ -11859,7 +11874,7 @@
             </div>
 
             <!-- Row 2: Feed Statistics + Expense Summary -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div class="rpt-grid-2">
               <div style="border:1px solid #336633;padding:6px;">
                 ${boxHeader('Feed Statistics')}
                 ${row('Feed Cost / Lb. (Net)', m(feedCostNet,5), true)}
