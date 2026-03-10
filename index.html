@@ -8792,10 +8792,12 @@
                   ${s.importedAt ? `&nbsp;·&nbsp; <span style="color:#444;">Imported ${new Date(s.importedAt).toLocaleDateString()}</span>` : ''}
                 </div>
               </div>
-              <button onclick="document.getElementById('settlement-pdf-input').click()"
+              <button onclick="document.getElementById('settlement-reimport-input').click()"
                 style="background:#1a2a1a;border:1px solid #22c55e44;border-radius:7px;padding:6px 14px;color:#22c55e;font-size:0.82em;cursor:pointer;white-space:nowrap;">
                 🔄 Re-import
               </button>
+              <input type="file" id="settlement-reimport-input" accept=".xls,.xlsx,application/pdf" style="display:none"
+                onchange="app.importSettlement(this)">
             </div>
 
             ${sectionHeader('🐦 Flock Summary')}
@@ -9315,7 +9317,14 @@
         Object.values(newQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => allItemIds.add(id)));
         Object.values(savedQtys || {}).forEach(qMap => Object.keys(qMap || {}).forEach(id => allItemIds.add(id)));
 
+        // Feed cost items are cost records only — never deduct from stock
+        const feedItemIds = new Set([
+          ...Object.keys(newQtys['fCost'] || {}),
+          ...Object.keys((savedQtys || {})['fCost'] || {})
+        ]);
+
         for (const itemId of allItemIds) {
+          if (feedItemIds.has(itemId)) continue;
           // Sum qty across all expense fields for this item
           let newTotal = 0;
           let savedTotal = 0;
@@ -9327,6 +9336,10 @@
 
           const item = (this.inventoryItems || []).find(i => i.docId === itemId);
           if (!item) continue;
+
+          // Skip feed ingredients — they are cost records only, not physical stock
+          const itemCat = (this.inventoryCategories || []).find(c => c.docId === item.categoryId);
+          if (itemCat && itemCat.expFieldKey === 'fCost') continue;
 
           const oldQty = parseFloat(item.qty) || 0;
           const newInvQty = Math.max(0, oldQty - delta);
@@ -12738,11 +12751,11 @@
                 : parseFloat(((prevCost * prevQty + costPer * newQty) / updQty).toFixed(6));
             }
             existingItem.costPer   = updCostPer;
-            existingItem.qty       = updQty;
             existingItem.createdAt = now;
+            // qty stays 0 — feed ingredients are cost records, not physical stock
             await db.collection('users').doc(this.user.uid)
               .collection('invItems').doc(existingItem.docId)
-              .update({ costPer: updCostPer, qty: updQty, createdAt: now });
+              .update({ costPer: updCostPer, createdAt: now });
           } else {
             // Create new inventory item
             const invData = {
@@ -12750,7 +12763,7 @@
               name: ing.name.trim(),
               unit: ing.isMixingCost ? 'batch' : 'lbs',
               costPer: ing.isMixingCost ? ing.cost : costPer,
-              qty: ing.isMixingCost ? 1 : (ing.units || 0),
+              qty: 0, // feed ingredients are cost records only — stock not tracked
               createdAt: now
             };
             const invRef = await db.collection('users').doc(this.user.uid)
@@ -13658,7 +13671,13 @@
         const _allItemIds = new Set();
         Object.values(_newQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => _allItemIds.add(id)));
         Object.values(_savedQtys).forEach(qMap => Object.keys(qMap || {}).forEach(id => _allItemIds.add(id)));
+        // Feed cost items are cost records only — never check stock
+        const _feedItemIds = new Set([
+          ...Object.keys(_newQtys['fCost'] || {}),
+          ...Object.keys((_savedQtys['fCost']) || {})
+        ]);
         for (const itemId of _allItemIds) {
+          if (_feedItemIds.has(itemId)) continue;
           let newTotal = 0, savedTotal = 0;
           Object.values(_newQtys).forEach(qMap => { newTotal += parseFloat((qMap || {})[itemId] || 0); });
           Object.values(_savedQtys).forEach(qMap => { savedTotal += parseFloat((qMap || {})[itemId] || 0); });
@@ -13666,6 +13685,9 @@
           if (delta <= 0) continue;
           const item = (this.inventoryItems || []).find(i => i.docId === itemId);
           if (!item) continue;
+          // Skip feed ingredients — cost records only, not physical stock
+          const _itemCat = (this.inventoryCategories || []).find(c => c.docId === item.categoryId);
+          if (_itemCat && _itemCat.expFieldKey === 'fCost') continue;
           const onHand = parseFloat(item.qty) || 0;
           if (delta > onHand) {
             overStockWarnings.push(
@@ -13948,17 +13970,29 @@
         if (btn) btn.style.background = checkbox.checked ? '#1db954' : '#444';
       }
 
-      async importMillReport(input) {
+      async importMillPDF(input) {
         const file = input.files[0];
         if (!file) return;
         input.value = '';
 
-        if (file.type !== 'application/pdf') {
+        if (file.type !== 'application/pdf' && !file.name.match(/\.pdf$/i)) {
           this.showToast('⚠️ Please select a PDF file', 'error');
           return;
         }
 
-        this.showToast('📄 Reading PDF…', 'info');
+        const pdfProgressToast = this.showToast('📄 Reading PDF… please wait', 'info');
+        if (pdfProgressToast) {
+          pdfProgressToast._persist = true;
+          clearTimeout(pdfProgressToast._timerId);
+        }
+        const dismissPdfProgress = () => {
+          if (pdfProgressToast && pdfProgressToast.parentElement) {
+            pdfProgressToast.remove();
+          }
+        };
+
+        // Yield to browser so toast renders before heavy processing starts
+        await new Promise(r => setTimeout(r, 50));
 
         try {
           if (!window.pdfjsLib) {
@@ -13974,6 +14008,7 @@
           }
 
           const arrayBuffer = await file.arrayBuffer();
+          if (pdfProgressToast) pdfProgressToast.querySelector('span:last-child') && (pdfProgressToast.querySelector('span:last-child').textContent = '📄 Loading PDF…');
           const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
           // Extract text line by line using Y position grouping
@@ -14075,24 +14110,48 @@
 
           // Sync ingredients into Inventory & Expenses (new system only)
           const total = ingredients.reduce((s, ing) => s + ing.cost, 0);
+
+          // Always force-reload inventory so we have fresh Firestore state before deleting
+          await this.loadInventory();
+          const feedCatPDF = (this.inventoryCategories || []).find(
+            c => c.expFieldKey === 'fCost' || c.name === 'Total Feed Cost' || c.name === (this.settings.feedLabel || 'Total Feed Cost')
+          );
+          if (feedCatPDF) {
+            const oldItems = (this.inventoryItems || []).filter(i => i.categoryId === feedCatPDF.docId);
+            if (oldItems.length) {
+              const batchDel = db.batch();
+              oldItems.forEach(item => {
+                batchDel.delete(db.collection('users').doc(this.user.uid).collection('invItems').doc(item.docId));
+                if (item.linkedExpItemId) {
+                  batchDel.delete(db.collection('users').doc(this.user.uid).collection('expItems').doc(item.linkedExpItemId));
+                  this.expenseItems = (this.expenseItems || []).filter(e => e.docId !== item.linkedExpItemId);
+                }
+              });
+              await batchDel.commit();
+              this.inventoryItems = (this.inventoryItems || []).filter(i => i.categoryId !== feedCatPDF.docId);
+            }
+          }
+          if (!this.currentFlock.expInvQtys) this.currentFlock.expInvQtys = {};
+          this.currentFlock.expInvQtys['fCost'] = {};
+
+          // Save ALL fields before render so they show immediately
           this.currentFlock.fCost = total;
+          if (pdfFeedLbs > 0) this.currentFlock.feedLbs = pdfFeedLbs;
           await this.saveFlock(this.currentFlock, true);
           await this.syncFeedIngredientsToInventory(ingredients);
-          this.showToast(`✅ Imported ${ingredients.length} ingredients — $${total.toFixed(2)} total`, 'success');
 
-          // Navigate and re-render AFTER sync so all invItems + expInvQtys are in memory
+          dismissPdfProgress();
+          // Re-render after sync so invItems + expInvQtys are in memory
           this.currentView = 'flock';
           this.render();
-          // Auto-fill feedLbs from PDF Total Weight
-          if (pdfFeedLbs > 0) {
-            this.currentFlock.feedLbs = pdfFeedLbs;
-            await this.saveFlock(this.currentFlock, true);
-          }
 
+          // Force field values into DOM after render settles
           setTimeout(() => {
+            const costInp = document.getElementById('exp-total-input-fCost') || document.querySelector('input[name="fCost"]');
+            if (costInp && costInp.isConnected) costInp.value = total.toFixed(2);
             if (pdfFeedLbs > 0) {
-              const feedLbsInp = document.querySelector('input[name="feedLbs"]');
-              if (feedLbsInp) feedLbsInp.value = pdfFeedLbs.toFixed(2);
+              const lbsInp = document.querySelector('input[name="feedLbs"]');
+              if (lbsInp) lbsInp.value = pdfFeedLbs.toFixed(2);
             }
             const extras = [];
             if (pdfFeedLbs > 0) extras.push('Feed Lbs: ' + pdfFeedLbs.toLocaleString());
@@ -14101,11 +14160,145 @@
             if (pdfTotalCost > 0) extras.push('PDF Total: $' + pdfTotalCost.toFixed(2));
             if (pdfFlockId) extras.push('Flock: ' + pdfFlockId);
             if (pdfRationName) extras.push('Ration: ' + pdfRationName);
-            if (extras.length > 0) this.showToast('Also from PDF — ' + extras.join(' | '), 'info');
-          }, 150);
+            this.showToast(`✅ Imported ${ingredients.length} ingredients — $${total.toFixed(2)}${extras.length ? ' | ' + extras.join(' | ') : ''}`, 'success');
+          }, 300);
 
         } catch (err) {
+          dismissPdfProgress();
           console.error('Mill report import error:', err);
+          this.showToast('❌ ' + err.message, 'error');
+        }
+      }
+
+      async importMillCSV(input) {
+        const file = input.files[0];
+        if (!file) return;
+        input.value = '';
+        if (!file.name.match(/\.csv$/i)) {
+          this.showToast('⚠️ Please select a mill batch CSV file', 'error');
+          return;
+        }
+
+        const progressToast = this.showToast('📊 Reading mill batch file…', 'info');
+        if (progressToast) {
+          const tid = setTimeout(() => {
+            if (progressToast.parentElement) {
+              progressToast.style.opacity = '0';
+              setTimeout(() => progressToast.remove(), 300);
+            }
+          }, 30000); // 30s max — will be cleared on success/error
+          progressToast._tid = tid;
+        }
+        const dismissProgress = () => {
+          if (progressToast && progressToast.parentElement) {
+            clearTimeout(progressToast._tid);
+            progressToast.remove();
+          }
+        };
+
+        try {
+          const text = await file.text();
+          const lines = text.replace(/\r/g, '').split('\n');
+
+          const ingMap = {};
+          let totalActualLbs = 0;
+          let jobCount = 0;
+          let flockId = '';
+          let inBatches = false;
+          let inJobTotals = false;
+
+          for (const line of lines) {
+            const l = line.trim();
+            if (!l) continue;
+            if (l === 'START_BATCHES' || l === 'START_BATCH') { inBatches = true; continue; }
+            if (l === 'START_BATCH_TOTALS') { inBatches = false; continue; }
+            if (l === 'START_JOB_TOTALS') { inJobTotals = true; inBatches = false; continue; }
+            if (l === 'END_BATCH_JOB') { inJobTotals = false; continue; }
+
+            if (inJobTotals) {
+              const parts = l.split(',');
+              if (parts.length >= 9) {
+                const lbs = parseFloat(parts[8]);
+                if (!isNaN(lbs) && lbs > 0) { totalActualLbs += lbs; jobCount++; }
+              }
+              inJobTotals = false;
+              continue;
+            }
+
+            if (inBatches && /^\d+,/.test(l)) {
+              const parts = l.split(',');
+              if (parts.length >= 10) {
+                const name = (parts[4] || '').trim().toUpperCase();
+                const actualLbs = parseFloat(parts[8]);
+                const cost = parseFloat(parts[9]);
+                if (name && !isNaN(cost) && cost > 0) {
+                  if (!ingMap[name]) ingMap[name] = { cost: 0, units: 0 };
+                  ingMap[name].cost += cost;
+                  if (!isNaN(actualLbs)) ingMap[name].units += actualLbs;
+                }
+              }
+            }
+            if (!flockId && /^Flk\d+-/i.test(l)) flockId = l;
+          }
+
+          const ingredients = Object.entries(ingMap).map(([name, v]) => ({ name, cost: v.cost, units: v.units }));
+          const totalCost = ingredients.reduce((s, i) => s + i.cost, 0);
+          if (totalCost <= 0) throw new Error('No ingredient costs found — check this is a mill batch export CSV');
+
+          // Update progress
+          if (progressToast && progressToast.parentElement) {
+            progressToast.querySelector('span:nth-child(2)').textContent = `⏳ Syncing ${ingredients.length} ingredients…`;
+          }
+
+          // Clear old feed inventory items
+          await this.loadInventory(); // Always fresh-reload before delete to avoid stale state
+          const feedCat = (this.inventoryCategories || []).find(
+            c => c.expFieldKey === 'fCost' || c.name === 'Total Feed Cost' || c.name === (this.settings.feedLabel || 'Total Feed Cost')
+          );
+          if (feedCat) {
+            const oldItems = (this.inventoryItems || []).filter(i => i.categoryId === feedCat.docId);
+            if (oldItems.length) {
+              const batchDel = db.batch();
+              oldItems.forEach(item => {
+                batchDel.delete(db.collection('users').doc(this.user.uid).collection('invItems').doc(item.docId));
+                if (item.linkedExpItemId) {
+                  batchDel.delete(db.collection('users').doc(this.user.uid).collection('expItems').doc(item.linkedExpItemId));
+                  this.expenseItems = (this.expenseItems || []).filter(e => e.docId !== item.linkedExpItemId);
+                }
+              });
+              await batchDel.commit();
+              this.inventoryItems = (this.inventoryItems || []).filter(i => i.categoryId !== feedCat.docId);
+            }
+          }
+          if (!this.currentFlock.expInvQtys) this.currentFlock.expInvQtys = {};
+          this.currentFlock.expInvQtys['fCost'] = {};
+
+          this.currentFlock.fCost = totalCost;
+          if (totalActualLbs > 0) this.currentFlock.feedLbs = totalActualLbs;
+          await this.saveFlock(this.currentFlock, true);
+          await this.syncFeedIngredientsToInventory(ingredients);
+
+          this.currentView = 'flock';
+          this.render();
+
+          dismissProgress();
+          const extras = [`${ingredients.length} ingredients`, `${jobCount} batch jobs`];
+          if (totalActualLbs > 0) extras.push(`Feed Lbs: ${Math.round(totalActualLbs).toLocaleString()}`);
+          if (flockId) extras.push(`Flock: ${flockId}`);
+          this.showToast(`✅ Mill CSV imported — $${totalCost.toFixed(2)} | ${extras.join(' | ')}`, 'success');
+
+          setTimeout(() => {
+            const costInp = document.getElementById('exp-total-input-fCost') || document.querySelector('input[name="fCost"]');
+            if (costInp && costInp.isConnected) costInp.value = totalCost.toFixed(2);
+            if (totalActualLbs > 0) {
+              const lbsInp = document.querySelector('input[name="feedLbs"]');
+              if (lbsInp) lbsInp.value = totalActualLbs.toFixed(2);
+            }
+          }, 300);
+
+        } catch (err) {
+          dismissProgress();
+          console.error('Mill CSV import error:', err);
           this.showToast('❌ ' + err.message, 'error');
         }
       }
@@ -14145,11 +14338,31 @@
 
             // Helper: find row where col0 matches label, return colN value
             const findVal = (label, col = 1) => {
-              const row = rows.find(r => r[0] && String(r[0]).toLowerCase().trim().startsWith(label.toLowerCase()));
-              return row ? row[col] : null;
+              // Search all columns for the label, then return the specified offset column
+              for (const row of rows) {
+                for (let c = 0; c < (row || []).length; c++) {
+                  if (row[c] && String(row[c]).toLowerCase().trim().startsWith(label.toLowerCase())) {
+                    return row[c + col] !== undefined ? row[c + col] : row[col] || null;
+                  }
+                }
+              }
+              return null;
             };
-            const findVal4 = (label) => findVal(label, 4); // many values are in col 4 (index 4)
+            const findVal4 = (label) => findVal(label, 4);
             const findVal5 = (label) => findVal(label, 5);
+            // Helper: find value in same row as label, next non-null cell
+            const findValNext = (label) => {
+              for (const row of rows) {
+                for (let c = 0; c < (row || []).length; c++) {
+                  if (row[c] && String(row[c]).toLowerCase().trim().startsWith(label.toLowerCase())) {
+                    for (let nc = c+1; nc < row.length; nc++) {
+                      if (row[nc] !== null && row[nc] !== undefined && row[nc] !== '') return row[nc];
+                    }
+                  }
+                }
+              }
+              return null;
+            };
 
             const toISO = (v) => {
               if (!v) return '';
@@ -14207,9 +14420,9 @@
             data.pctTotalCondemn  = findVal4('% Total Grower Condemn');
 
             // Feed performance extras
-            data.feedCostPerTon   = findVal4(' - Feed Cost per Ton');
-            data.feedCostPerTonMD = findVal4(' - Feed Cost per Ton with M');
-            data.feedPayPerLb     = findVal4(' - Feed Payment per Net Live Pound');
+            data.feedCostPerTon   = findVal4(' - Feed Cost per Ton') || findValNext(' - Feed Cost per Ton');
+            data.feedCostPerTonMD = findVal4(' - Feed Cost per Ton with M') || findValNext(' - Feed Cost per Ton with M');
+            data.feedPayPerLb     = findVal4(' - Feed Payment per Net Live Pound') || findValNext(' - Feed Payment per Net Live Pound');
             data.avgCornPricePerBu = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. Corn price')); return r ? r[4] : null; })();
             data.avgSbmPricePerTon = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. SBM price')); return r ? r[4] : null; })();
             data.avgMbPricePerTon  = (() => { const r = rows.find(r => r[0] && String(r[0]).includes('Avg. M & B price')); return r ? r[4] : null; })();
@@ -14464,13 +14677,20 @@
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap:wrap;">
               <label style="flex: 1; margin: 0; min-width:80px;">${this.escapeHtml(this.settings[labelKey])}</label>
               ${isFeed ? `
-                <button type="button" onclick="document.getElementById('mill-report-input').click()"
-                  title="Import mill report (photo or PDF)"
+                <button type="button" onclick="document.getElementById('mill-pdf-input').click()"
+                  title="Import Maximix PDF ration report"
                   style="background: #1a3a2a; border: 1px solid #1db954; border-radius: 6px; padding: 3px 10px; cursor: pointer; color: #1db954; font-size: 13px; white-space: nowrap;">
-                  📄 Import Report
+                  📄 PDF Report
                 </button>
-                <input type="file" id="mill-report-input" accept="application/pdf" style="display:none"
-                  onchange="app.importMillReport(this)">
+                <input type="file" id="mill-pdf-input" accept="application/pdf" style="display:none"
+                  onchange="app.importMillPDF(this)">
+                <button type="button" onclick="document.getElementById('mill-csv-input').click()"
+                  title="Import mill batch CSV export"
+                  style="background: #0f2035; border: 1px solid #3b82f6; border-radius: 6px; padding: 3px 10px; cursor: pointer; color: #60a5fa; font-size: 13px; white-space: nowrap;">
+                  📊 Mill CSV
+                </button>
+                <input type="file" id="mill-csv-input" accept=".csv,text/csv" style="display:none"
+                  onchange="app.importMillCSV(this)">
               ` : ''}
 
             </div>
@@ -14479,7 +14699,7 @@
               <!-- Total input on top with dropdown arrow to reveal sub-items -->
               <div style="position:relative;">
                 <input type="number" name="${dataKey}" id="exp-total-input-${dataKey}"
-                  value="${this.fmtInput(invTotal > 0 ? invTotal : currentTotal, 2)}"
+                  value="${this.fmtInput(currentTotal > 0 ? currentTotal : invTotal, 2)}"
                   min="0" max="9999999" step="0.01" inputmode="decimal"
                   style="width:100%;padding-right:40px;box-sizing:border-box;">
                 <button type="button"
@@ -14496,10 +14716,10 @@
                     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
                       <span style="flex:1;color:#ccc;font-size:0.88em;min-width:60px;max-width:100%;">${this.escapeHtml(item.name)}</span>
                       <span style="color:#555;font-size:0.75em;white-space:nowrap;">$${parseFloat(item.costPer||0).toFixed(2)}/${this.escapeHtml(item.unit)}</span>
-                      <input type="number" min="0" step="0.01" placeholder="0"
+                      <input type="number" min="0" step="any" placeholder="0"
                         value="${q || ''}"
                         oninput="app.onInvItemQtyChange('${dataKey}','${item.docId}',this.value)"
-                        style="width:65px;padding:4px 7px;background:#111;border:1px solid rgba(34,197,94,0.3);border-radius:5px;color:#fff;font-size:0.88em;text-align:right;flex-shrink:0;">
+                        style="width:95px;padding:4px 7px;background:#111;border:1px solid rgba(34,197,94,0.3);border-radius:5px;color:#fff;font-size:0.88em;text-align:right;flex-shrink:0;">
                       <span style="color:#22c55e;font-size:0.85em;font-weight:600;min-width:54px;text-align:right;flex-shrink:0;white-space:nowrap;" id="inv-line-${dataKey}-${item.docId}">$${lineTotal.toFixed(2)}</span>
                     </div>`;
                 }).join('')}
